@@ -1,0 +1,63 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  core:
+    name: core (Swift Package)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick newest Xcode
+        run: |
+          XC=$(ls -d /Applications/Xcode*.app | sort -r | head -1)
+          echo "DEVELOPER_DIR=$XC/Contents/Developer" >> "$GITHUB_ENV"
+          "$XC/Contents/Developer/usr/bin/xcodebuild" -version
+
+      - name: Build
+        working-directory: core
+        run: swift build -Xswiftc -warnings-as-errors
+
+      - name: Test
+        working-directory: core
+        run: swift test --enable-code-coverage
+
+  mac:
+    name: mac (Tuist + Xcode)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick newest Xcode
+        run: |
+          XC=$(ls -d /Applications/Xcode*.app | sort -r | head -1)
+          echo "DEVELOPER_DIR=$XC/Contents/Developer" >> "$GITHUB_ENV"
+          "$XC/Contents/Developer/usr/bin/xcodebuild" -version
+
+      - name: Install Tuist
+        run: brew install tuist xcbeautify
+
+      - name: Generate
+        working-directory: mac
+        run: |
+          tuist install
+          tuist generate --no-open
+
+      - name: Build
+        working-directory: mac
+        run: |
+          xcodebuild -workspace TinyPress.xcworkspace \
+            -scheme TinyPress \
+            -destination 'platform=macOS' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
+            build | xcbeautify
+
+      - name: Test
+        working-directory: mac
+        run: |
+          xcodebuild test -workspace TinyPress.xcworkspace \
+            -scheme TinyPress \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
+            | xcbeautify

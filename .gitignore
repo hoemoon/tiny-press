@@ -1,0 +1,25 @@
+## Tuist generated artifacts
+*.xcodeproj/
+*.xcworkspace/
+Tuist/.build/
+Tuist/Dependencies/
+Derived/
+
+## Swift / SPM
+.build/
+.swiftpm/
+Package.resolved
+DerivedData/
+
+## Build outputs
+build/
+dist/
+
+## macOS
+.DS_Store
+xcuserdata/
+
+## Editor
+.vscode/
+.idea/
+*.swp

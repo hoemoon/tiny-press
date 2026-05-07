@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  dmg:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick newest Xcode
+        run: |
+          # macos-26 runners are not yet GA. Prefer the newest Xcode shipped
+          # with the chosen image; the build will refuse if SDK 26 isn't
+          # there and the user must build locally instead.
+          XC=$(ls -d /Applications/Xcode*.app | sort -r | head -1)
+          echo "DEVELOPER_DIR=$XC/Contents/Developer" >> "$GITHUB_ENV"
+          "$XC/Contents/Developer/usr/bin/xcodebuild" -version
+
+      - name: Install Tuist
+        run: brew install tuist xcbeautify
+
+      - name: Build dmg (unsigned, ad-hoc)
+        working-directory: mac
+        run: ./scripts/build-dmg.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TinyPress-dmg
+          path: mac/dist/*.dmg
+
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: mac/dist/*.dmg
+          fail_on_unmatched_files: true
+          generate_release_notes: true
