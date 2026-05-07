@@ -39,14 +39,48 @@ python3 -m http.server -d _site 8000   # preview locally
 
 ## Commands
 
+The blocks marked `<!-- BEGIN_HELP:* -->` are regenerated from
+`tinypress --help` by `core/scripts/generate-manual.py`. Don't edit
+them by hand — see *Keeping the manual in sync* below.
+
+<!-- BEGIN_HELP:root -->
+```
+OVERVIEW: tiny press — a tiny static site generator.
+
+USAGE: tinypress <subcommand>
+
+OPTIONS:
+  --version               Show the version.
+  -h, --help              Show help information.
+
+SUBCOMMANDS:
+  init                    Scaffold a new tiny press site at the given path.
+  build                   Render the site at --source into the --output folder.
+
+  See 'tinypress help <subcommand>' for detailed help.
+```
+<!-- END_HELP:root -->
+
 ### `tinypress init <path>`
 
 Scaffold a new tiny press site at `<path>`. Creates the folder if
 absent; refuses to overwrite a non-empty directory.
 
+<!-- BEGIN_HELP:init -->
 ```
-tinypress init <path> [--title <title>]
+OVERVIEW: Scaffold a new tiny press site at the given path.
+
+USAGE: tinypress init <path> [--title <title>]
+
+ARGUMENTS:
+  <path>                  Folder where the new site will be created.
+
+OPTIONS:
+  --title <title>         Title for the new site. (default: My Site)
+  --version               Show the version.
+  -h, --help              Show help information.
 ```
+<!-- END_HELP:init -->
 
 | Option | Default | Description |
 |---|---|---|
@@ -80,9 +114,21 @@ Next: cd ./demo && tinypress build
 Render the site at `--source` into `--output`. Idempotent: same input
 produces same output tree.
 
+<!-- BEGIN_HELP:build -->
 ```
-tinypress build [--source <path>] [--output <path>] [--include-drafts]
+OVERVIEW: Render the site at --source into the --output folder.
+
+USAGE: tinypress build [--source <source>] [--output <output>] [--include-drafts]
+
+OPTIONS:
+  -s, --source <source>   Source folder. Defaults to the current directory.
+                          (default: .)
+  -o, --output <output>   Output folder. Defaults to <source>/_site.
+  --include-drafts        Include posts marked draft: true.
+  --version               Show the version.
+  -h, --help              Show help information.
 ```
+<!-- END_HELP:build -->
 
 | Option | Default | Description |
 |---|---|---|
@@ -167,3 +213,30 @@ action below has a CLI equivalent (or will, per the parity plan in
 
 If you find an app feature that has no CLI equivalent, that is a bug
 in the architecture — file an issue.
+
+## Keeping the manual in sync
+
+The fenced blocks marked `<!-- BEGIN_HELP:* -->` are filled by
+`core/scripts/generate-manual.py`, which captures `tinypress --help`
+output for each subcommand and rewrites the markers in place.
+
+Two safety nets enforce that the manual stays in sync with the CLI:
+
+- **Pre-commit hook** (`.githooks/pre-commit`) — when a commit touches
+  `core/Sources/tinypress-cli/**`, the hook regenerates MANUAL.md and
+  re-stages it automatically. Activate the hook once per clone:
+
+  ```bash
+  git config core.hooksPath .githooks
+  ```
+
+- **CI drift check** — the `core` job in `.github/workflows/ci.yml`
+  runs `python3 core/scripts/generate-manual.py --check` and fails
+  the build if the committed MANUAL.md disagrees with the captured
+  help output. Even if a contributor bypasses the local hook, the
+  manual cannot fall behind on `main`.
+
+To add a new subcommand to the auto-fill set, add its name to the
+`COMMANDS` map at the top of `generate-manual.py` and insert
+`<!-- BEGIN_HELP:<name> -->` / `<!-- END_HELP:<name> -->` markers
+in this file.

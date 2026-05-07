@@ -54,7 +54,22 @@ Concretely:
   either — lift it to the kit and expose a `tinypress` subcommand.
 - `core/MANUAL.md` documents the full CLI surface and is the contract
   the mac app honours. Changes to CLI flags must update MANUAL.md in
-  the same commit.
+  the same commit — `core/scripts/generate-manual.py` regenerates the
+  fenced `BEGIN_HELP`/`END_HELP` blocks from `tinypress --help`. The
+  pre-commit hook below runs it automatically.
+
+## One-time clone setup
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Activates `.githooks/pre-commit`, which regenerates `core/MANUAL.md`
+whenever a commit touches `core/Sources/tinypress-cli/**`. CI fails
+the build if the committed manual disagrees with the captured
+`--help` output, so unactivated hooks won't let drift slip in
+silently — but the hook keeps local commits clean without an extra
+step.
 
 ## Conventions
 
