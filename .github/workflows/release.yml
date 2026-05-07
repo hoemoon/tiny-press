@@ -12,29 +12,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Pick newest Xcode
+      - name: Pick Xcode 26+ (or skip)
+        id: xc
         run: |
-          # macos-26 runners are not yet GA. Prefer the newest Xcode shipped
-          # with the chosen image; the build will refuse if SDK 26 isn't
-          # there and the user must build locally instead.
           XC=$(ls -d /Applications/Xcode*.app | sort -r | head -1)
-          echo "DEVELOPER_DIR=$XC/Contents/Developer" >> "$GITHUB_ENV"
-          "$XC/Contents/Developer/usr/bin/xcodebuild" -version
+          XC_VER=$("$XC/Contents/Developer/usr/bin/xcodebuild" -version | head -1 | awk '{print $2}')
+          XC_MAJOR=${XC_VER%%.*}
+          if [ "${XC_MAJOR:-0}" -lt 26 ]; then
+            echo "::warning::No Xcode 26+ on this runner (found $XC_VER)."
+            echo "::notice::Build locally and: gh release upload \$TAG mac/dist/*.dmg --clobber"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "DEVELOPER_DIR=$XC/Contents/Developer" >> "$GITHUB_ENV"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Install Tuist
+        if: steps.xc.outputs.skip != 'true'
         run: brew install tuist xcbeautify
 
       - name: Build dmg (unsigned, ad-hoc)
+        if: steps.xc.outputs.skip != 'true'
         working-directory: mac
         run: ./scripts/build-dmg.sh
 
       - name: Upload artifact
+        if: steps.xc.outputs.skip != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: TinyPress-dmg
           path: mac/dist/*.dmg
 
       - name: Attach to release
+        if: steps.xc.outputs.skip != 'true'
         uses: softprops/action-gh-release@v2
         with:
           files: mac/dist/*.dmg
