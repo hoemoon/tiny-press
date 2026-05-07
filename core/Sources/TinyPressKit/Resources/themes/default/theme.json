@@ -1,0 +1,10 @@
+{
+  "name": "default",
+  "version": "0.1.0",
+  "author": "tiny press",
+  "defaultLayouts": {
+    "post": "post",
+    "page": "page",
+    "index": "index"
+  }
+}

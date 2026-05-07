@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}{{ site.title }}{% endblock %}
+{% block ogTitle %}{{ site.title }}{% endblock %}
+
+{% block content %}
+<section class="post-list">
+  {% if posts %}
+  <ul class="posts">
+    {% for post in posts %}
+    <li class="posts-item">
+      <a class="posts-link" href="{{ post.permalink }}">{{ post.title }}</a>
+      {% if post.date %}<time class="posts-date" datetime="{{ post.dateISO }}">{{ post.date }}</time>{% endif %}
+      {% if post.excerpt %}<p class="posts-excerpt">{{ post.excerpt }}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="posts-empty">No posts yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

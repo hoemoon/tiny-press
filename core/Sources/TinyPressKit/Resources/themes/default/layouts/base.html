@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="{{ site.language }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}{{ page.title }} · {{ site.title }}{% endblock %}</title>
+  {% if site.description %}<meta name="description" content="{{ site.description }}" />{% endif %}
+  {% if site.author %}<meta name="author" content="{{ site.author }}" />{% endif %}
+  <meta property="og:title" content="{% block ogTitle %}{{ page.title }}{% endblock %}" />
+  {% if site.description %}<meta property="og:description" content="{{ site.description }}" />{% endif %}
+  <meta property="og:type" content="website" />
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="site-title" href="/">{{ site.title }}</a>
+    {% if site.description %}<p class="site-description">{{ site.description }}</p>{% endif %}
+  </header>
+  <main class="site-main">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    {% if site.author %}<p>© {{ site.author }}</p>{% endif %}
+    <p>Built with <a href="https://github.com/tinypress" rel="noopener">tiny press</a>.</p>
+  </footer>
+</body>
+</html>

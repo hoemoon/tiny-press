@@ -1,0 +1,6 @@
+title: Sample
+description: A fixture site used by integration tests.
+author: Test Author
+theme: default
+language: en
+permalinkStyle: pretty
