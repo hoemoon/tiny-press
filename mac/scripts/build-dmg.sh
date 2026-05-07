@@ -93,7 +93,27 @@ if (( DO_SIGN )); then
     ARCHIVE_PATH="$BUILD_DIR/TinyPress.xcarchive"
     APP_OUT="$BUILD_DIR/Export/TinyPress.app"
 
+    # Derive the team id from the keychain unless the user pinned one.
+    # Without DEVELOPMENT_TEAM, automatic signing falls back to "Sign to
+    # Run Locally" and exportArchive errors with "No Team Found in Archive".
+    if [[ -z "${TINYPRESS_TEAM_ID:-}" ]]; then
+        TINYPRESS_TEAM_ID=$(security find-identity -v -p codesigning \
+            | grep -m 1 "Developer ID Application" \
+            | sed -E 's/.*\(([A-Z0-9]+)\)".*/\1/' || true)
+    fi
+    if [[ -z "${TINYPRESS_TEAM_ID:-}" ]]; then
+        echo "No 'Developer ID Application' identity in keychain." >&2
+        echo "Run: security find-identity -v -p codesigning" >&2
+        exit 1
+    fi
+    echo "==> Signing as team $TINYPRESS_TEAM_ID"
+
     echo "==> Archiving (Developer ID)"
+    # With Automatic signing, only DEVELOPMENT_TEAM is set — Xcode picks
+    # the identity from the export `method` (developer-id in our plist).
+    # Explicitly setting CODE_SIGN_IDENTITY here triggers a "conflicting
+    # provisioning settings" lint failure for SPM-bundled framework
+    # targets that have no concept of Developer ID.
     xcodebuild archive \
         -workspace "$WORKSPACE" \
         -scheme "$SCHEME" \
@@ -102,6 +122,7 @@ if (( DO_SIGN )); then
         -archivePath "$ARCHIVE_PATH" \
         CODE_SIGN_STYLE=Automatic \
         CODE_SIGNING_REQUIRED=YES \
+        DEVELOPMENT_TEAM="$TINYPRESS_TEAM_ID" \
         | xcfilter
 
     cat > "$BUILD_DIR/ExportOptions.plist" <<PLIST
@@ -111,6 +132,7 @@ if (( DO_SIGN )); then
 <dict>
     <key>method</key><string>developer-id</string>
     <key>signingStyle</key><string>automatic</string>
+    <key>teamID</key><string>$TINYPRESS_TEAM_ID</string>
 </dict>
 </plist>
 PLIST
