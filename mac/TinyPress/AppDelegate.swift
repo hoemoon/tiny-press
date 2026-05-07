@@ -1,7 +1,6 @@
 import AppKit
 import TinyPressKit
 
-@main
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let appState = AppState()

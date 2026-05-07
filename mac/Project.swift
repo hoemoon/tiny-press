@@ -44,8 +44,10 @@ let project = Project(
                 "CFBundleShortVersionString": "0.1.0",
                 "CFBundleVersion": "1",
                 "NSHumanReadableCopyright": "© 2026 tiny press",
-                // App boots programmatically; no Main.storyboard exists.
-                "NSMainStoryboardFile": "",
+                // App boots programmatically via main.swift — no storyboard.
+                // Don't set NSMainStoryboardFile at all; on macOS 26 an empty
+                // string lands the status item in a floating NSSceneStatusItem
+                // detached from the system menu bar (icon never appears).
             ]),
             sources: ["TinyPress/**"],
             resources: ["TinyPress/Assets.xcassets"],
