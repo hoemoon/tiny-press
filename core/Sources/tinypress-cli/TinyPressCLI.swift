@@ -4,7 +4,7 @@ import ArgumentParser
 struct TinyPressCLI: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "tinypress",
-        abstract: "tiny press — a tiny static site generator.",
+        abstract: "tiny press — 작은 정적 사이트 생성기.",
         version: "0.1.0",
         subcommands: TinyPressCLI.allSubcommands,
         defaultSubcommand: nil

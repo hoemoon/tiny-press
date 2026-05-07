@@ -4,13 +4,13 @@ import Foundation
 struct InitCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "init",
-        abstract: "Scaffold a new tiny press site at the given path."
+        abstract: "지정한 경로에 새 tiny press 사이트를 스캐폴드합니다."
     )
 
-    @Argument(help: "Folder where the new site will be created.")
+    @Argument(help: "새 사이트가 생성될 폴더 경로.")
     var path: String
 
-    @Option(name: .long, help: "Title for the new site.")
+    @Option(name: .long, help: "새 사이트의 제목.")
     var title: String = "My Site"
 
     func run() async throws {

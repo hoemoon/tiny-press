@@ -7,25 +7,25 @@ import TinyPressKit
 struct PreviewCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "preview",
-        abstract: "Build the site, watch for changes, and serve it locally with live reload."
+        abstract: "사이트를 빌드하고 변경을 감지하면서 로컬에서 라이브 리로드와 함께 서빙합니다."
     )
 
-    @Option(name: .shortAndLong, help: "Source folder. Defaults to the current directory.")
+    @Option(name: .shortAndLong, help: "소스 폴더. 기본값은 현재 디렉터리.")
     var source: String = "."
 
-    @Option(name: .shortAndLong, help: "Output folder. Defaults to <source>/_site.")
+    @Option(name: .shortAndLong, help: "출력 폴더. 기본값은 <source>/_site.")
     var output: String?
 
-    @Option(name: .shortAndLong, help: "Preferred local port (auto-bumps if busy).")
+    @Option(name: .shortAndLong, help: "선호 로컬 포트 (사용 중이면 자동으로 다음 빈 포트).")
     var port: Int = 8080
 
-    @Option(name: .long, help: "Bind host.")
+    @Option(name: .long, help: "바인드 호스트.")
     var host: String = "127.0.0.1"
 
-    @Flag(name: .long, help: "Include posts marked draft: true.")
+    @Flag(name: .long, help: "draft: true로 표시된 포스트도 포함.")
     var includeDrafts: Bool = false
 
-    @Flag(name: .long, help: "Mirror the preview on tailnet via `tailscale serve`.")
+    @Flag(name: .long, help: "`tailscale serve`로 tailnet에 프리뷰를 미러링.")
     var share: Bool = false
 
     @MainActor

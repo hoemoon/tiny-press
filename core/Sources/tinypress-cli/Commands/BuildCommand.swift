@@ -5,16 +5,16 @@ import TinyPressKit
 struct BuildCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "build",
-        abstract: "Render the site at --source into the --output folder."
+        abstract: "--source의 사이트를 --output 폴더로 렌더링합니다."
     )
 
-    @Option(name: .shortAndLong, help: "Source folder. Defaults to the current directory.")
+    @Option(name: .shortAndLong, help: "소스 폴더. 기본값은 현재 디렉터리.")
     var source: String = "."
 
-    @Option(name: .shortAndLong, help: "Output folder. Defaults to <source>/_site.")
+    @Option(name: .shortAndLong, help: "출력 폴더. 기본값은 <source>/_site.")
     var output: String?
 
-    @Flag(name: .long, help: "Include posts marked draft: true.")
+    @Flag(name: .long, help: "draft: true로 표시된 포스트도 포함.")
     var includeDrafts: Bool = false
 
     func run() async throws {

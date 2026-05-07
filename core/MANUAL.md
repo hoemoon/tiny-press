@@ -1,23 +1,22 @@
-# tinypress — CLI manual
+# tinypress — CLI 매뉴얼
 
-`tinypress` is the command-line entry point for tiny press. The macOS
-menu-bar app is a GUI wrapper over this CLI; every feature you see in
-the app maps to a subcommand documented below. New behaviour lands here
-first.
+`tinypress`는 tiny press의 커맨드라인 진입점입니다. macOS 메뉴바 앱은 이
+CLI를 GUI로 감싼 래퍼이며, 앱에서 보이는 모든 기능은 아래 서브커맨드로
+대응됩니다. 새로운 동작은 항상 여기에 먼저 들어옵니다.
 
-> Status: `init`, `build`, and `preview` ship today. `serve` (serve a
-> pre-built tree without watching) is still planned; see `../CLAUDE.md`
-> → *Architecture principle*.
+> 상태: `init`, `build`, `preview`는 현재 사용 가능. `serve`(이미 빌드된
+> 트리를 watch 없이 서빙)는 추가 예정 — `../CLAUDE.md`의 *Architecture
+> principle* 참조.
 
-## Install
+## 설치
 
-### Homebrew (recommended)
+### Homebrew (권장)
 
 ```bash
 brew install hoemoon/tinypress/tinypress
 ```
 
-### From source
+### 소스에서 빌드
 
 ```bash
 git clone https://github.com/hoemoon/tiny-press.git
@@ -26,26 +25,26 @@ swift build -c release
 cp .build/release/tinypress /usr/local/bin/
 ```
 
-Requires Xcode 26 / Swift 6.3 toolchain.
+Xcode 26 / Swift 6.3 toolchain 필요.
 
-## Quick start
+## 빠른 시작
 
 ```bash
 tinypress init my-blog --title "My Blog"
 cd my-blog
 tinypress build
-python3 -m http.server -d _site 8000   # preview locally
+python3 -m http.server -d _site 8000   # 로컬에서 미리 보기
 ```
 
-## Commands
+## 명령어
 
-The blocks marked `<!-- BEGIN_HELP:* -->` are regenerated from
-`tinypress --help` by `core/scripts/generate-manual.py`. Don't edit
-them by hand — see *Keeping the manual in sync* below.
+`<!-- BEGIN_HELP:* -->` 블록은 `core/scripts/generate-manual.py`가
+`tinypress --help` 출력으로부터 다시 채웁니다. 손으로 편집하지 마세요 —
+아래 *매뉴얼 동기화* 섹션 참조.
 
 <!-- BEGIN_HELP:root -->
 ```
-OVERVIEW: tiny press — a tiny static site generator.
+OVERVIEW: tiny press — 작은 정적 사이트 생성기.
 
 USAGE: tinypress <subcommand>
 
@@ -54,10 +53,9 @@ OPTIONS:
   -h, --help              Show help information.
 
 SUBCOMMANDS:
-  init                    Scaffold a new tiny press site at the given path.
-  build                   Render the site at --source into the --output folder.
-  preview                 Build the site, watch for changes, and serve it
-                          locally with live reload.
+  init                    지정한 경로에 새 tiny press 사이트를 스캐폴드합니다.
+  build                   --source의 사이트를 --output 폴더로 렌더링합니다.
+  preview                 사이트를 빌드하고 변경을 감지하면서 로컬에서 라이브 리로드와 함께 서빙합니다.
 
   See 'tinypress help <subcommand>' for detailed help.
 ```
@@ -65,44 +63,44 @@ SUBCOMMANDS:
 
 ### `tinypress init <path>`
 
-Scaffold a new tiny press site at `<path>`. Creates the folder if
-absent; refuses to overwrite a non-empty directory.
+`<path>`에 새 tiny press 사이트 폴더를 만듭니다. 폴더가 없으면 생성하고,
+비어있지 않은 폴더는 덮어쓰지 않습니다.
 
 <!-- BEGIN_HELP:init -->
 ```
-OVERVIEW: Scaffold a new tiny press site at the given path.
+OVERVIEW: 지정한 경로에 새 tiny press 사이트를 스캐폴드합니다.
 
 USAGE: tinypress init <path> [--title <title>]
 
 ARGUMENTS:
-  <path>                  Folder where the new site will be created.
+  <path>                  새 사이트가 생성될 폴더 경로.
 
 OPTIONS:
-  --title <title>         Title for the new site. (default: My Site)
+  --title <title>         새 사이트의 제목. (default: My Site)
   --version               Show the version.
   -h, --help              Show help information.
 ```
 <!-- END_HELP:init -->
 
-| Option | Default | Description |
+| 옵션 | 기본값 | 설명 |
 |---|---|---|
-| `<path>` | *(required)* | Folder to create. |
-| `--title <title>` | `My Site` | Title written into `tinypress.yml`. |
+| `<path>` | *(필수)* | 생성할 폴더 경로. |
+| `--title <title>` | `My Site` | `tinypress.yml`에 기록할 사이트 제목. |
 
-Creates:
+생성되는 구조:
 
 ```
 <path>/
 ├── tinypress.yml                 # SiteConfig (title/theme/language/...)
 ├── content/
-│   ├── posts/hello.md            # sample post with frontmatter
-│   └── pages/about.md            # sample page
-└── static/                       # static assets, copied as-is
+│   ├── posts/hello.md            # frontmatter가 들어간 샘플 포스트
+│   └── pages/about.md            # 샘플 페이지
+└── static/                       # 정적 에셋, 그대로 복사됨
 ```
 
-Prints the absolute path of the new site to stdout. Logs go to stderr.
+생성된 사이트의 절대 경로를 stdout에 출력하고, 로그는 stderr로 보냅니다.
 
-**Example**
+**예시**
 
 ```bash
 $ tinypress init ./demo --title "Demo Site"
@@ -113,46 +111,44 @@ Next: cd ./demo && tinypress build
 
 ### `tinypress build`
 
-Render the site at `--source` into `--output`. Idempotent: same input
-produces same output tree.
+`--source`의 사이트를 `--output`으로 렌더링합니다. 같은 입력은 항상 같은
+결과 트리를 만듭니다 (멱등).
 
 <!-- BEGIN_HELP:build -->
 ```
-OVERVIEW: Render the site at --source into the --output folder.
+OVERVIEW: --source의 사이트를 --output 폴더로 렌더링합니다.
 
 USAGE: tinypress build [--source <source>] [--output <output>] [--include-drafts]
 
 OPTIONS:
-  -s, --source <source>   Source folder. Defaults to the current directory.
-                          (default: .)
-  -o, --output <output>   Output folder. Defaults to <source>/_site.
-  --include-drafts        Include posts marked draft: true.
+  -s, --source <source>   소스 폴더. 기본값은 현재 디렉터리. (default: .)
+  -o, --output <output>   출력 폴더. 기본값은 <source>/_site.
+  --include-drafts        draft: true로 표시된 포스트도 포함.
   --version               Show the version.
   -h, --help              Show help information.
 ```
 <!-- END_HELP:build -->
 
-| Option | Default | Description |
+| 옵션 | 기본값 | 설명 |
 |---|---|---|
-| `-s`, `--source <path>` | `.` | Source folder containing `tinypress.yml`. |
-| `-o`, `--output <path>` | `<source>/_site` | Output folder. Wiped on each build (dot-prefixed entries preserved). |
-| `--include-drafts` | off | Include posts with `draft: true` in frontmatter. |
+| `-s`, `--source <path>` | `.` | `tinypress.yml`이 들어있는 소스 폴더. |
+| `-o`, `--output <path>` | `<source>/_site` | 출력 폴더. 매 빌드마다 비워집니다 (점으로 시작하는 항목은 보존). |
+| `--include-drafts` | off | frontmatter에 `draft: true`로 표시된 포스트도 포함. |
 
-Behaviour:
+동작:
 
-- The output folder is cleared at the start of each build, except for
-  dot-prefixed entries (`.git`, `.DS_Store`, ...).
-- Pages with `draft: true` are excluded by default; `--include-drafts`
-  flips this for the run.
-- Per-page errors (bad YAML, missing layout) fail just that page and
-  surface in the build report's warnings; the rest of the build
-  continues.
-- Duplicate slugs are a hard build error.
+- 빌드 시작 시 출력 폴더를 비웁니다 — `.git`, `.DS_Store` 등
+  dot-prefixed 항목은 그대로 유지.
+- `draft: true` 페이지는 기본 제외; `--include-drafts`로 포함시킬 수
+  있습니다.
+- 페이지 단위 에러(잘못된 YAML, 누락된 레이아웃 등)는 해당 페이지만
+  실패시키고 빌드 보고서의 warnings에 기록 — 나머지는 계속 진행.
+- 동일한 slug 충돌은 빌드를 중단시키는 하드 에러입니다.
 
-Prints the absolute output path to stdout when the build succeeds.
-Returns exit code `1` on failure (build report messages on stderr).
+성공 시 절대 출력 경로 한 줄을 stdout으로 출력. 실패 시 exit code `1`과
+함께 stderr에 메시지가 남습니다.
 
-**Example**
+**예시**
 
 ```bash
 $ tinypress build --source ./demo --include-drafts
@@ -163,59 +159,54 @@ Built 4 page(s) and copied 3 asset(s) in 0.123s
 
 ### `tinypress preview`
 
-Build the site, watch the source tree, and serve the rendered output
-on a local HTTP server with live reload. Foreground process; Ctrl-C
-to stop.
+사이트를 빌드한 뒤 소스 트리를 감시하면서, 라이브 리로드 기능을 가진
+로컬 HTTP 서버로 결과물을 서빙합니다. foreground 프로세스 — Ctrl-C로
+중단합니다.
 
 <!-- BEGIN_HELP:preview -->
 ```
-OVERVIEW: Build the site, watch for changes, and serve it locally with live
-reload.
+OVERVIEW: 사이트를 빌드하고 변경을 감지하면서 로컬에서 라이브 리로드와 함께 서빙합니다.
 
 USAGE: tinypress preview [--source <source>] [--output <output>] [--port <port>] [--host <host>] [--include-drafts] [--share]
 
 OPTIONS:
-  -s, --source <source>   Source folder. Defaults to the current directory.
-                          (default: .)
-  -o, --output <output>   Output folder. Defaults to <source>/_site.
-  -p, --port <port>       Preferred local port (auto-bumps if busy). (default:
-                          8080)
-  --host <host>           Bind host. (default: 127.0.0.1)
-  --include-drafts        Include posts marked draft: true.
-  --share                 Mirror the preview on tailnet via `tailscale serve`.
+  -s, --source <source>   소스 폴더. 기본값은 현재 디렉터리. (default: .)
+  -o, --output <output>   출력 폴더. 기본값은 <source>/_site.
+  -p, --port <port>       선호 로컬 포트 (사용 중이면 자동으로 다음 빈 포트). (default: 8080)
+  --host <host>           바인드 호스트. (default: 127.0.0.1)
+  --include-drafts        draft: true로 표시된 포스트도 포함.
+  --share                 `tailscale serve`로 tailnet에 프리뷰를 미러링.
   --version               Show the version.
   -h, --help              Show help information.
 ```
 <!-- END_HELP:preview -->
 
-| Option | Default | Description |
+| 옵션 | 기본값 | 설명 |
 |---|---|---|
-| `-s`, `--source <path>` | `.` | Source folder containing `tinypress.yml`. |
-| `-o`, `--output <path>` | `<source>/_site` | Where the rendered tree lives. Watcher ignores it. |
-| `-p`, `--port <n>` | `8080` | First port tried; the server bumps to the next free one if busy. |
-| `--host <host>` | `127.0.0.1` | Bind interface. Use `0.0.0.0` to expose on the LAN. |
-| `--include-drafts` | off | Include posts marked `draft: true`. |
-| `--share` | off | Mirror the preview on tailnet via `tailscale serve`. Requires the Tailscale daemon to be running and logged in. |
+| `-s`, `--source <path>` | `.` | `tinypress.yml`이 들어있는 소스 폴더. |
+| `-o`, `--output <path>` | `<source>/_site` | 렌더링 결과가 떨어지는 위치. watcher가 무시. |
+| `-p`, `--port <n>` | `8080` | 처음 시도하는 포트. 사용 중이면 자동으로 다음 빈 포트를 찾음. |
+| `--host <host>` | `127.0.0.1` | 바인드 인터페이스. LAN 노출은 `0.0.0.0`. |
+| `--include-drafts` | off | `draft: true` 포스트도 포함. |
+| `--share` | off | `tailscale serve`로 tailnet에 미러링. Tailscale 데몬이 실행 중이고 로그인되어 있어야 합니다. |
 
-Behaviour:
+동작:
 
-- One initial build runs synchronously; the server only starts after
-  it succeeds. A failed first build aborts with exit `1`.
-- The watcher debounces bursts (300 ms window). Subsequent build
-  errors are logged but don't tear the server down — the previous
-  output stays live.
-- HTML responses get a tiny `<script>` injected that opens an SSE
-  connection to `/__tinypress_reload`; rebuilds push a `reload`
-  event and the browser refreshes.
-- `--share` shells out to `tailscale serve` (the macOS app and CLI
-  share the same `TailscaleServeAdapter` for this). The adapter
-  fails closed: if the daemon is missing or logged out, the local
-  preview keeps working and the warning prints to stderr.
+- 첫 빌드는 동기적으로 실행되며, 성공해야 서버가 시작됩니다. 첫 빌드가
+  실패하면 exit `1`로 중단.
+- watcher는 변경 버스트를 300ms 윈도우로 디바운스합니다. 이후 빌드 에러는
+  로그만 남기고 서버를 내리지 않습니다 — 직전 출력이 계속 서빙됩니다.
+- HTML 응답에는 작은 `<script>`가 자동 주입되어 `/__tinypress_reload`로
+  SSE 연결을 열고, 재빌드 시 push되는 `reload` 이벤트로 브라우저가 자동
+  새로고침합니다.
+- `--share`는 `tailscale serve`를 셸 호출 (macOS 앱과 CLI가 같은
+  `TailscaleServeAdapter`를 공유). 실패 시 fail-closed: 데몬이 없거나
+  로그아웃 상태라도 로컬 프리뷰는 계속 동작하고 stderr에 경고만 남깁니다.
 
-The single line on stdout is the local URL, so wrappers can read it
-without parsing logs.
+stdout에는 로컬 URL 한 줄만 출력하므로, 래퍼 스크립트가 로그를 파싱하지
+않고도 URL을 읽을 수 있습니다.
 
-**Example**
+**예시**
 
 ```bash
 $ tinypress preview --source ./demo --share
@@ -226,80 +217,78 @@ Watching for changes — Ctrl-C to stop.
 http://127.0.0.1:8080/
 ```
 
-## Folder convention
+## 폴더 컨벤션
 
 ```
 my-site/
 ├── tinypress.yml                 # SiteConfig
 ├── content/
-│   ├── posts/                    # Page.Kind.post — slug derived from filename
+│   ├── posts/                    # Page.Kind.post — 파일명에서 slug 추출
 │   │   └── 2026-01-01-hello.md
 │   ├── pages/                    # Page.Kind.page
 │   │   └── about.md
-│   └── index.md                  # Page.Kind.index (optional)
-└── static/                       # copied verbatim into output root
+│   └── index.md                  # Page.Kind.index (옵션)
+└── static/                       # 출력 루트로 그대로 복사됨
     └── images/
 ```
 
-Authoring details (frontmatter fields, theme overrides) live in
-[`docs/CONTENT.md`](docs/CONTENT.md) and [`docs/THEMING.md`](docs/THEMING.md).
+콘텐츠 작성 가이드(frontmatter 필드, 테마 오버라이드)는
+[`docs/CONTENT.md`](docs/CONTENT.md)와
+[`docs/THEMING.md`](docs/THEMING.md)에 있습니다.
 
-## Exit codes
+## Exit code
 
-| Code | Meaning |
+| 코드 | 의미 |
 |---|---|
-| 0 | Success. |
-| 1 | Build or scaffold failed (message on stderr). |
-| 2 | Argument parsing error (ArgumentParser default). |
-| 64 | `--help` / `--version` exits (ArgumentParser convention). |
+| 0 | 성공. |
+| 1 | 빌드 또는 스캐폴드 실패 (메시지는 stderr). |
+| 2 | 인자 파싱 에러 (ArgumentParser 기본). |
+| 64 | `--help` / `--version` 출력 후 종료 (ArgumentParser 관례). |
 
-## Logging
+## 로깅
 
-All status and error messages go to **stderr** with no prefix for info
-and an `error: ` prefix for errors. The single line on **stdout** is
-the result path, so `tinypress` is safe to compose in shell pipelines:
+상태/에러 메시지는 모두 **stderr**로 갑니다 (info는 prefix 없음, error는
+`error: ` prefix). **stdout** 한 줄은 결과 경로이므로, `tinypress`를 셸
+파이프라인에 안전하게 끼워 쓸 수 있습니다:
 
 ```bash
 output=$(tinypress build --source ./demo)
 rsync -av "$output/" user@host:/var/www/demo/
 ```
 
-## Mac app ↔ CLI mapping
+## Mac 앱 ↔ CLI 매핑
 
-The menu-bar app exposes the same operations through a GUI. Every
-action below has a CLI equivalent (or will, per the parity plan in
-`CLAUDE.md`):
+메뉴바 앱은 동일한 동작을 GUI로 노출합니다. 아래의 모든 액션은 CLI 등가
+명령을 가집니다 (또는 `CLAUDE.md`의 parity plan에 따라 곧 가질 예정):
 
-| App action | CLI equivalent |
+| 앱 액션 | 대응 CLI 명령 |
 |---|---|
-| Add Site → choose folder | *(stateless)* — pass the folder to `build` / `preview` directly |
+| Add Site → 폴더 선택 | *(stateless)* — `build`/`preview`에 폴더 경로를 직접 전달 |
 | Build | `tinypress build --source <folder>` |
-| Preview (live reload) | `tinypress preview --source <folder>` |
-| Share via Tailscale | `tinypress preview --source <folder> --share` |
-| Settings → edit `tinypress.yml` | edit the file directly |
+| Preview (라이브 리로드) | `tinypress preview --source <folder>` |
+| Tailscale로 공유 | `tinypress preview --source <folder> --share` |
+| Settings → `tinypress.yml` 편집 | 파일을 직접 편집 |
 
-If you find an app feature that has no CLI equivalent, that is a bug
-in the architecture — file an issue.
+CLI 등가 명령이 없는 앱 기능을 발견하면 아키텍처 버그 — 이슈로 보고해
+주세요.
 
-## Keeping the manual in sync
+## 매뉴얼 동기화
 
-The fenced blocks marked `<!-- BEGIN_HELP:* -->` are filled by
-`core/scripts/generate-manual.py`, which captures `tinypress --help`
-output for each subcommand and rewrites the markers in place. Two
-ways to invoke it:
+`<!-- BEGIN_HELP:* -->` 블록은 `core/scripts/generate-manual.py`가
+서브커맨드별 `tinypress --help` 출력을 캡처해 마커 사이에 다시 채워
+넣습니다. 두 가지 호출 경로:
 
-- **Inside Claude Code** — invoke the `/menual` skill, or just ask
-  Claude to "refresh the manual". The skill runs the script and
-  reports whether anything changed.
-- **Directly from the shell** — `python3 core/scripts/generate-manual.py`
-  from the repo root. Use `--check` for a read-only verification
-  that exits 1 on drift (handy for personal pre-push checks).
+- **Claude Code 안에서** — `/menual` 스킬을 호출하거나, "매뉴얼
+  갱신해줘" 같은 자연어로 요청. 스킬이 스크립트를 실행하고 변경 여부를
+  보고합니다.
+- **셸에서 직접** — 저장소 루트에서
+  `python3 core/scripts/generate-manual.py`. `--check`는 파일을 쓰지
+  않고 drift만 감지(drift 시 exit 1) — 본인 push 전 검증용.
 
-Whoever changes a CLI flag is responsible for staging the resulting
-`core/MANUAL.md` diff in the same commit — there is no automation
-forcing it.
+CLI 플래그를 변경한 사람이 같은 커밋에 `core/MANUAL.md` diff를 함께
+stage할 책임을 갖습니다 — 이를 강제하는 자동화는 두지 않았습니다.
 
-To add a new subcommand to the auto-fill set, add its name to the
-`COMMANDS` map at the top of `generate-manual.py` and insert
-`<!-- BEGIN_HELP:<name> -->` / `<!-- END_HELP:<name> -->` markers
-in this file.
+새 서브커맨드를 자동 채움 대상에 추가하려면 `generate-manual.py` 상단의
+`COMMANDS` 매핑에 이름을 추가하고, 이 파일에 대응하는
+`<!-- BEGIN_HELP:<name> -->` / `<!-- END_HELP:<name> -->` 마커 쌍을
+넣어주세요.
