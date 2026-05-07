@@ -218,23 +218,19 @@ in the architecture — file an issue.
 
 The fenced blocks marked `<!-- BEGIN_HELP:* -->` are filled by
 `core/scripts/generate-manual.py`, which captures `tinypress --help`
-output for each subcommand and rewrites the markers in place.
+output for each subcommand and rewrites the markers in place. Two
+ways to invoke it:
 
-Two safety nets enforce that the manual stays in sync with the CLI:
+- **Inside Claude Code** — invoke the `/menual` skill, or just ask
+  Claude to "refresh the manual". The skill runs the script and
+  reports whether anything changed.
+- **Directly from the shell** — `python3 core/scripts/generate-manual.py`
+  from the repo root. Use `--check` for a read-only verification
+  that exits 1 on drift (handy for personal pre-push checks).
 
-- **Pre-commit hook** (`.githooks/pre-commit`) — when a commit touches
-  `core/Sources/tinypress-cli/**`, the hook regenerates MANUAL.md and
-  re-stages it automatically. Activate the hook once per clone:
-
-  ```bash
-  git config core.hooksPath .githooks
-  ```
-
-- **CI drift check** — the `core` job in `.github/workflows/ci.yml`
-  runs `python3 core/scripts/generate-manual.py --check` and fails
-  the build if the committed MANUAL.md disagrees with the captured
-  help output. Even if a contributor bypasses the local hook, the
-  manual cannot fall behind on `main`.
+Whoever changes a CLI flag is responsible for staging the resulting
+`core/MANUAL.md` diff in the same commit — there is no automation
+forcing it.
 
 To add a new subcommand to the auto-fill set, add its name to the
 `COMMANDS` map at the top of `generate-manual.py` and insert

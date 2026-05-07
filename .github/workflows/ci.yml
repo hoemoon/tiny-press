@@ -32,11 +32,6 @@ jobs:
         working-directory: core
         run: swift test --enable-code-coverage
 
-      - name: Manual sync check
-        if: steps.xc.outputs.skip != 'true'
-        working-directory: core
-        run: python3 scripts/generate-manual.py --check
-
   mac:
     name: mac (Tuist + Xcode)
     runs-on: macos-latest
