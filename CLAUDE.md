@@ -34,6 +34,28 @@ xcodebuild test -workspace TinyPress.xcworkspace \
     -scheme TinyPress -destination 'platform=macOS'
 ```
 
+## Architecture principle: CLI is the source of truth
+
+The macOS menu-bar app is a GUI wrapper over `tinypress`. Every
+user-visible feature in the app must correspond to a `tinypress`
+subcommand with equivalent behaviour, and new features ship to the CLI
+first.
+
+Concretely:
+
+- Functionality lives in `core/` (`TinyPressKit` + `tinypress-cli`),
+  not in `mac/TinyPress/Services/`. Code under `mac/` should be UI
+  plumbing only — wiring AppKit views to kit/CLI behaviour.
+- The mac app links `TinyPressKit` directly (in-process) rather than
+  spawning the CLI binary, for low-latency UI feedback. Spawning is
+  fine for one-shot operations; long-running flows (watch, preview
+  server, Tailscale share) share the kit.
+- If a code path has no CLI equivalent, it does not belong in `mac/`
+  either — lift it to the kit and expose a `tinypress` subcommand.
+- `core/MANUAL.md` documents the full CLI surface and is the contract
+  the mac app honours. Changes to CLI flags must update MANUAL.md in
+  the same commit.
+
 ## Conventions
 
 - **No SwiftUI / storyboard / xib.** macOS uses AppKit programmatically.
