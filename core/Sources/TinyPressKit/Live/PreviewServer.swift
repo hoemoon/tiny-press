@@ -1,3 +1,4 @@
+#if os(macOS)
 import Foundation
 import Hummingbird
 import HummingbirdCore
@@ -10,7 +11,11 @@ import NIOCore
 ///
 /// Built on Hummingbird 2.x: `FileMiddleware` fronts the static tree,
 /// while `/__tinypress_reload` keeps an SSE stream open for the browser.
-final class PreviewServer: @unchecked Sendable {
+///
+/// macOS-only for now: `tinypress` ships a desktop preview, and an iOS
+/// build doesn't make sense for a long-running HTTP server. Gated by
+/// `#if os(macOS)` to keep the iOS variant of the kit slim.
+public final class PreviewServer: @unchecked Sendable {
     private let rootDirectory: URL
     private let host: String
     private let preferredPort: Int
@@ -19,9 +24,11 @@ final class PreviewServer: @unchecked Sendable {
     private let reloadStream: AsyncStream<Void>
     private let reloadContinuation: AsyncStream<Void>.Continuation
 
-    private(set) var port: Int?
+    /// Port the server is bound to once `start()` has returned, otherwise
+    /// `nil`.
+    public private(set) var port: Int?
 
-    init(
+    public init(
         rootDirectory: URL,
         host: String = "127.0.0.1",
         preferredPort: Int = 8080
@@ -38,7 +45,7 @@ final class PreviewServer: @unchecked Sendable {
 
     /// Start the server on the first available port at-or-after
     /// `preferredPort`. Returns the port that was actually bound.
-    func start() async throws -> Int {
+    public func start() async throws -> Int {
         let chosen = try findAvailablePort(startingAt: preferredPort)
         let app = makeApplication(port: chosen)
         let task = Task<Void, Error> { try await app.runService() }
@@ -51,14 +58,14 @@ final class PreviewServer: @unchecked Sendable {
     }
 
     /// Stop the server. Idempotent.
-    func stop() async {
+    public func stop() async {
         task?.cancel()
         task = nil
         port = nil
     }
 
     /// Notify connected browsers that the site was rebuilt.
-    func notifyClientsToReload() {
+    public func notifyClientsToReload() {
         reloadContinuation.yield(())
     }
 
@@ -132,7 +139,7 @@ final class PreviewServer: @unchecked Sendable {
 }
 
 /// Errors surfaced by `PreviewServer`.
-enum PreviewServerError: Error {
+public enum PreviewServerError: Error, Sendable {
     /// No free port found within the search window.
     case noFreePort(searchedFrom: Int)
 }
@@ -214,3 +221,4 @@ private struct LiveReloadInjectionMiddleware<Context: RequestContext>: RouterMid
         return html + snippet
     }
 }
+#endif

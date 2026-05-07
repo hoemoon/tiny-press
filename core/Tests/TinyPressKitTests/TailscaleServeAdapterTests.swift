@@ -1,6 +1,7 @@
+#if os(macOS)
 import XCTest
 
-@testable import TinyPress
+@testable import TinyPressKit
 
 final class TailscaleServeAdapterTests: XCTestCase {
     /// Detect should at least move out of `.unknown` once it has run.
@@ -32,3 +33,4 @@ final class TailscaleServeAdapterTests: XCTestCase {
         XCTAssertTrue(host.hasSuffix(".ts.net"), "Unexpected hostname \(host)")
     }
 }
+#endif

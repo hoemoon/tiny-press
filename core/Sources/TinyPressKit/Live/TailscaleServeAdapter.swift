@@ -1,3 +1,4 @@
+#if os(macOS)
 import Foundation
 import Observation
 
@@ -5,13 +6,17 @@ import Observation
 /// reachable at `https://<host>.<tailnet>.ts.net/` from any device on the
 /// user's tailnet.
 ///
-/// All shell-outs go through `Process` directly — the macOS app drops App
-/// Sandbox so this is allowed (see `TinyPress.entitlements`).
+/// All shell-outs go through `Process` directly. The macOS app drops App
+/// Sandbox so this is allowed (see `mac/TinyPress/TinyPress.entitlements`);
+/// on a sandboxed embedding this adapter will simply land on
+/// `.unavailable` because the binary lookup paths are unreadable.
+///
+/// macOS-only: `Process` and the `tailscale` CLI are macOS concepts.
 @MainActor
 @Observable
-final class TailscaleServeAdapter {
+public final class TailscaleServeAdapter {
     /// Lifecycle state surfaced to the UI.
-    enum State: Sendable, Equatable {
+    public enum State: Sendable, Equatable {
         /// Initial state before `detect()` runs.
         case unknown
         /// `tailscale` not installed, daemon down, etc. UI shows the reason.
@@ -26,19 +31,21 @@ final class TailscaleServeAdapter {
         case failed(String)
     }
 
-    private(set) var state: State = .unknown
+    public private(set) var state: State = .unknown
 
     /// MagicDNS hostname for this node, e.g. `host.tailnet.ts.net`.
-    private(set) var hostname: String?
+    public private(set) var hostname: String?
 
     /// Local port currently registered with `tailscale serve`, if any.
-    private(set) var registeredPort: Int?
+    public private(set) var registeredPort: Int?
 
     private var binaryPath: String?
 
+    public init() {}
+
     /// Probe for the CLI and read the current node's hostname.
     /// Idempotent — safe to call repeatedly (e.g. on app foreground).
-    func detect() async {
+    public func detect() async {
         guard let path = locateBinary() else {
             state = .unavailable("tailscale CLI not found in /opt/homebrew/bin, /usr/local/bin, or /Applications")
             return
@@ -68,7 +75,7 @@ final class TailscaleServeAdapter {
 
     /// Register the given local port with `tailscale serve --bg`.
     /// Replaces any prior registration.
-    func enable(localPort: Int) async {
+    public func enable(localPort: Int) async {
         guard let path = binaryPath, let host = hostname else {
             await detect()
             // detect() already moved to .unavailable on failure.
@@ -98,7 +105,7 @@ final class TailscaleServeAdapter {
     }
 
     /// Clear any active `tailscale serve` registration. Idempotent.
-    func disable() async {
+    public func disable() async {
         guard let path = binaryPath else {
             registeredPort = nil
             return
@@ -180,7 +187,8 @@ final class TailscaleServeAdapter {
     }
 
     /// Errors thrown by `runShell`.
-    enum ShellError: Error, Equatable {
+    public enum ShellError: Error, Equatable, Sendable {
         case nonZeroExit(status: Int32, output: String)
     }
 }
+#endif

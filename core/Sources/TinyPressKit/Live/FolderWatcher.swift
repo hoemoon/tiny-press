@@ -1,3 +1,4 @@
+#if os(macOS)
 import CoreServices
 import Foundation
 
@@ -8,7 +9,11 @@ import Foundation
 /// recursive case and gives us a single coalesced callback per batch of
 /// changes — we layer a small async debounce on top so the rebuild
 /// pipeline isn't kicked off mid-typing.
-final class FolderWatcher: @unchecked Sendable {
+///
+/// macOS-only: the underlying `FSEventStream` API is part of CoreServices
+/// and is not available on iOS. The whole file is gated by
+/// `#if os(macOS)` so iOS builds of `TinyPressKit` simply omit the type.
+public final class FolderWatcher: @unchecked Sendable {
     private let url: URL
     private let debounceInterval: TimeInterval
     private let ignoredComponents: Set<String>
@@ -25,7 +30,7 @@ final class FolderWatcher: @unchecked Sendable {
     ///   - ignoredComponents: Path components inside the tree that should
     ///     not trigger rebuilds. Defaults to common build / VCS dirs and
     ///     the rendered output folders.
-    init(
+    public init(
         url: URL,
         debounceInterval: TimeInterval = 0.3,
         ignoredComponents: Set<String> = [
@@ -44,7 +49,7 @@ final class FolderWatcher: @unchecked Sendable {
     /// Begin watching. `onChange` runs on the main actor every time the
     /// debounce window expires after at least one non-ignored change.
     @MainActor
-    func start(onChange: @MainActor @Sendable @escaping () -> Void) throws {
+    public func start(onChange: @MainActor @Sendable @escaping () -> Void) throws {
         queue.sync {
             self.onChange = onChange
         }
@@ -52,7 +57,7 @@ final class FolderWatcher: @unchecked Sendable {
     }
 
     /// Stop watching. Safe to call multiple times.
-    func stop() {
+    public func stop() {
         stopInternal()
     }
 
@@ -158,6 +163,10 @@ final class FolderWatcher: @unchecked Sendable {
     }
 }
 
-enum FolderWatcherError: Error {
+/// Errors thrown by `FolderWatcher`.
+public enum FolderWatcherError: Error, Sendable {
+    /// `FSEventStreamCreate` returned nil — usually means the path is
+    /// unreadable or the watch limit has been hit.
     case streamCreationFailed
 }
+#endif

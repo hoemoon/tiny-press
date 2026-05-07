@@ -1,4 +1,5 @@
 import AppKit
+import TinyPressKit
 
 /// Compact strip rendered above the site list in the menu bar popover.
 /// Shows the current `TailscaleServeAdapter.State` with a copy-URL button

@@ -14,6 +14,10 @@ let package = Package(
         .package(url: "https://github.com/stencilproject/Stencil.git", from: "0.15.1"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
         .package(url: "https://github.com/swiftlang/swift-docc-plugin.git", from: "1.4.0"),
+        .package(
+            url: "https://github.com/hummingbird-project/hummingbird.git",
+            from: "2.22.0"
+        ),
     ],
     targets: [
         .target(
@@ -22,6 +26,11 @@ let package = Package(
                 .product(name: "Markdown", package: "swift-markdown"),
                 "Yams",
                 "Stencil",
+                // Hummingbird powers `Live/PreviewServer` (macOS-only file).
+                // The dep is unconditional so iOS still resolves the
+                // package graph; the feature itself is gated by
+                // `#if os(macOS)`.
+                .product(name: "Hummingbird", package: "hummingbird"),
             ],
             resources: [.copy("Resources/themes")],
             swiftSettings: [.swiftLanguageMode(.v6)]

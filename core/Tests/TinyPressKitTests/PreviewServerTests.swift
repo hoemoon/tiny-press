@@ -1,6 +1,7 @@
+#if os(macOS)
 import XCTest
 
-@testable import TinyPress
+@testable import TinyPressKit
 
 final class PreviewServerTests: XCTestCase {
     private var workDir: URL!
@@ -63,3 +64,4 @@ final class PreviewServerTests: XCTestCase {
         return try await session.data(from: url)
     }
 }
+#endif

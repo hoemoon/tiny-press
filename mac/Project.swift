@@ -11,11 +11,10 @@ let project = Project(
         // Local path keeps the macOS app and the core in lockstep during
         // development. Swap to `.remote(url:)` once `core` is
         // published on GitHub.
+        //
+        // Hummingbird used to be listed here directly; it is now a
+        // transitive dep of `TinyPressKit` (via `Live/PreviewServer`).
         .local(path: "../core"),
-        .remote(
-            url: "https://github.com/hummingbird-project/hummingbird",
-            requirement: .upToNextMajor(from: "2.22.0")
-        ),
     ],
     settings: .settings(
         base: [
@@ -54,7 +53,6 @@ let project = Project(
             entitlements: .file(path: "TinyPress/TinyPress.entitlements"),
             dependencies: [
                 .package(product: "TinyPressKit"),
-                .package(product: "Hummingbird"),
             ]
         ),
         .target(

@@ -1,6 +1,7 @@
+#if os(macOS)
 import XCTest
 
-@testable import TinyPress
+@testable import TinyPressKit
 
 final class FolderWatcherTests: XCTestCase {
     private var workDir: URL!
@@ -77,3 +78,4 @@ private actor ChangeCounter {
     private(set) var value = 0
     func increment() { value += 1 }
 }
+#endif
