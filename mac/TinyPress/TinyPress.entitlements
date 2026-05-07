@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+        App Sandbox is intentionally disabled.
+
+        tiny press is a developer-side tool that needs to invoke the
+        `tailscale` CLI installed outside the bundle, watch user-picked
+        folders without bookmark dance, and bind a local HTTP server.
+        The Sandbox-friendly alternative (NSUserUnixTask + per-file
+        bookmarks for every external command) adds significant first-run
+        friction for an audience that is already trusting the binary.
+
+        Re-enable `com.apple.security.app-sandbox` if a future
+        distribution channel (e.g. the Mac App Store) requires it.
+    -->
+    <key>com.apple.security.network.server</key>
+    <true/>
+    <key>com.apple.security.network.client</key>
+    <true/>
+</dict>
+</plist>
