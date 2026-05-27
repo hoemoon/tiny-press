@@ -6,10 +6,10 @@ import Observation
 /// reachable at `https://<host>.<tailnet>.ts.net/` from any device on the
 /// user's tailnet.
 ///
-/// All shell-outs go through `Process` directly. The macOS app drops App
-/// Sandbox so this is allowed (see `mac/TinyPress/TinyPress.entitlements`);
-/// on a sandboxed embedding this adapter will simply land on
-/// `.unavailable` because the binary lookup paths are unreadable.
+/// All shell-outs go through `Process` directly. Unsandboxed callers (the
+/// `tinypress` CLI is one) can spawn `tailscale` freely; a hypothetical
+/// sandboxed embedding would land on `.unavailable` because the binary
+/// lookup paths are unreadable.
 ///
 /// macOS-only: `Process` and the `tailscale` CLI are macOS concepts.
 @MainActor

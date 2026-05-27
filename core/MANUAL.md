@@ -1,12 +1,9 @@
 # tinypress — CLI 매뉴얼
 
-`tinypress`는 tiny press의 커맨드라인 진입점입니다. macOS 메뉴바 앱은 이
-CLI를 GUI로 감싼 래퍼이며, 앱에서 보이는 모든 기능은 아래 서브커맨드로
-대응됩니다. 새로운 동작은 항상 여기에 먼저 들어옵니다.
+`tinypress`는 tiny press의 커맨드라인 진입점입니다.
 
 > 상태: `init`, `build`, `preview`는 현재 사용 가능. `serve`(이미 빌드된
-> 트리를 watch 없이 서빙)는 추가 예정 — `../CLAUDE.md`의 *Architecture
-> principle* 참조.
+> 트리를 watch 없이 서빙)는 추가 예정.
 
 ## 설치
 
@@ -288,22 +285,6 @@ Flat 모드에서:
 output=$(tinypress build --source ./demo)
 rsync -av "$output/" user@host:/var/www/demo/
 ```
-
-## Mac 앱 ↔ CLI 매핑
-
-메뉴바 앱은 동일한 동작을 GUI로 노출합니다. 아래의 모든 액션은 CLI 등가
-명령을 가집니다 (또는 `CLAUDE.md`의 parity plan에 따라 곧 가질 예정):
-
-| 앱 액션 | 대응 CLI 명령 |
-|---|---|
-| Add Site → 폴더 선택 | *(stateless)* — `build`/`preview`에 폴더 경로를 직접 전달 |
-| Build | `tinypress build --source <folder>` |
-| Preview (라이브 리로드) | `tinypress preview --source <folder>` |
-| Tailscale로 공유 | `tinypress preview --source <folder> --share` |
-| Settings → `tinypress.yml` 편집 | 파일을 직접 편집 |
-
-CLI 등가 명령이 없는 앱 기능을 발견하면 아키텍처 버그 — 이슈로 보고해
-주세요.
 
 ## 매뉴얼 동기화
 
