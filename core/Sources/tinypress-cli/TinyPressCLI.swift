@@ -5,7 +5,7 @@ struct TinyPressCLI: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "tinypress",
         abstract: "tiny press — 작은 정적 사이트 생성기.",
-        version: "0.3.0",
+        version: "0.4.0",
         subcommands: TinyPressCLI.allSubcommands,
         defaultSubcommand: nil
     )
