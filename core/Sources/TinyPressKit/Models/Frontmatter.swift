@@ -23,6 +23,13 @@ public struct Frontmatter: Codable, Sendable, Equatable {
     /// falls back to the layout for the page kind.
     public var layout: String?
 
+    /// Optional explicit kind override (``post`` or ``page``). Honored by the
+    /// builder when set, otherwise the kind is inferred from the file's
+    /// location (``content/posts/`` vs ``content/pages/`` in nested mode;
+    /// default ``post`` in flat mode). ``index`` is reserved for the
+    /// homepage and not user-settable here.
+    public var kind: String?
+
     /// User-defined fields preserved verbatim from the YAML block.
     public var extra: [String: FrontmatterValue]
 
@@ -33,6 +40,7 @@ public struct Frontmatter: Codable, Sendable, Equatable {
         slug: String? = nil,
         draft: Bool = false,
         layout: String? = nil,
+        kind: String? = nil,
         extra: [String: FrontmatterValue] = [:]
     ) {
         self.title = title
@@ -41,6 +49,7 @@ public struct Frontmatter: Codable, Sendable, Equatable {
         self.slug = slug
         self.draft = draft
         self.layout = layout
+        self.kind = kind
         self.extra = extra
     }
 
@@ -48,7 +57,7 @@ public struct Frontmatter: Codable, Sendable, Equatable {
     public static let empty = Frontmatter()
 
     private enum CodingKeys: String, CodingKey {
-        case title, date, tags, slug, draft, layout, extra
+        case title, date, tags, slug, draft, layout, kind, extra
     }
 
     public init(from decoder: Decoder) throws {
@@ -59,6 +68,7 @@ public struct Frontmatter: Codable, Sendable, Equatable {
         self.slug = try container.decodeIfPresent(String.self, forKey: .slug)
         self.draft = try container.decodeIfPresent(Bool.self, forKey: .draft) ?? false
         self.layout = try container.decodeIfPresent(String.self, forKey: .layout)
+        self.kind = try container.decodeIfPresent(String.self, forKey: .kind)
         self.extra =
             try container.decodeIfPresent([String: FrontmatterValue].self, forKey: .extra) ?? [:]
     }
@@ -71,6 +81,7 @@ public struct Frontmatter: Codable, Sendable, Equatable {
         try container.encodeIfPresent(slug, forKey: .slug)
         if draft { try container.encode(draft, forKey: .draft) }
         try container.encodeIfPresent(layout, forKey: .layout)
+        try container.encodeIfPresent(kind, forKey: .kind)
         if !extra.isEmpty { try container.encode(extra, forKey: .extra) }
     }
 }

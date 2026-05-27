@@ -85,12 +85,71 @@ public final class SiteBuilder: Sendable {
             to: outputRoot
         )
 
+        // Flat-mode asset sidecars: in flat layout, each post may have a
+        // sibling directory matching the source filename's basename (the
+        // Obsidian "attachment folder" convention). Copy those into the
+        // page's output directory so `./X` links resolve.
+        var sidecarAssetCount = 0
+        let contentRoot = resolveContentRoot(sourceRoot: sourceRoot)
+        let isFlat = isFlatLayout(contentRoot: contentRoot)
+        if isFlat {
+            for page in site.pages where page.kind != .index {
+                do {
+                    sidecarAssetCount += try copyAssetSidecar(
+                        for: page,
+                        copier: copier,
+                        site: site,
+                        warnings: &warnings
+                    )
+                } catch {
+                    warnings.append(
+                        "Sidecar copy failed for \(page.sourceURL.lastPathComponent): \(error)"
+                    )
+                }
+            }
+        }
+
         return BuildReport(
             pagesGenerated: generated,
-            assetsCopied: themeAssetCount + userAssetCount,
+            assetsCopied: themeAssetCount + userAssetCount + sidecarAssetCount,
             duration: Date().timeIntervalSince(start),
             warnings: warnings
         )
+    }
+
+    private func copyAssetSidecar(
+        for page: Page,
+        copier: AssetCopier,
+        site: Site,
+        warnings: inout [String]
+    ) throws -> Int {
+        let basename = page.sourceURL.deletingPathExtension().lastPathComponent
+        let sourceFolder = page.sourceURL.deletingLastPathComponent()
+            .appendingPathComponent(basename, isDirectory: true)
+        let fm = FileManager.default
+        var isDir: ObjCBool = false
+        guard fm.fileExists(atPath: sourceFolder.path, isDirectory: &isDir),
+              isDir.boolValue
+        else { return 0 }
+
+        switch site.config.permalinkStyle {
+        case .pretty:
+            // Pretty permalinks output `<dir>/index.html`; assets land in
+            // `<dir>/` next to the HTML so rewritten `./X` resolves.
+            let outputDir = pageOutputURL(for: page, in: site)
+                .deletingLastPathComponent()
+            return try copier.copyTree(from: sourceFolder, to: outputDir)
+        case .file:
+            // File permalinks (`<slug>.html`) don't yet support sidecars
+            // — image paths would have to stay `./<basename>/X` and the
+            // folder would collide across siblings. Warn so users notice.
+            warnings.append(
+                "Asset sidecar for \(page.sourceURL.lastPathComponent) skipped — "
+                + "file permalink style doesn't support flat-mode sidecars yet. "
+                + "Switch to permalinkStyle: pretty in tinypress.yml."
+            )
+            return 0
+        }
     }
 
     // MARK: Theme resolution
@@ -116,33 +175,82 @@ public final class SiteBuilder: Sendable {
 
     // MARK: Discovery
 
+    /// Returns the directory we treat as the content root.
+    ///
+    /// Conventional sites have a dedicated ``content/`` subfolder. When
+    /// that's missing — e.g. a naverp channel folder pointed at directly
+    /// via ``--source`` — the source root itself is the content root.
+    /// That lets `tinypress --source ~/Documents/Naverp/wave` build a
+    /// site straight out of the archive without a wrapping directory.
+    private func resolveContentRoot(sourceRoot: URL) -> URL {
+        let candidate = sourceRoot.appendingPathComponent("content", isDirectory: true)
+        if FileManager.default.fileExists(atPath: candidate.path) {
+            return candidate
+        }
+        return sourceRoot
+    }
+
+    /// "Flat" content layout: no ``posts/`` or ``pages/`` subdirectories
+    /// under the content root. Every ``.md`` at depth 1 is a content file,
+    /// defaulting to ``post`` unless the frontmatter overrides it. This
+    /// matches the naverp archive shape (``<channel>/<naver_id>.md``).
+    private func isFlatLayout(contentRoot: URL) -> Bool {
+        let fm = FileManager.default
+        let postsDir = contentRoot.appendingPathComponent("posts", isDirectory: true)
+        let pagesDir = contentRoot.appendingPathComponent("pages", isDirectory: true)
+        var isDir: ObjCBool = false
+        let hasPosts = fm.fileExists(atPath: postsDir.path, isDirectory: &isDir) && isDir.boolValue
+        isDir = false
+        let hasPages = fm.fileExists(atPath: pagesDir.path, isDirectory: &isDir) && isDir.boolValue
+        return !hasPosts && !hasPages
+    }
+
     private func discoverPages(
         in sourceRoot: URL,
         config: SiteConfig,
         includeDrafts: Bool,
         warnings: inout [String]
     ) throws -> [Page] {
-        let contentRoot = sourceRoot.appendingPathComponent("content", isDirectory: true)
+        let contentRoot = resolveContentRoot(sourceRoot: sourceRoot)
         guard FileManager.default.fileExists(atPath: contentRoot.path) else {
             return []
         }
+        let flat = isFlatLayout(contentRoot: contentRoot)
 
-        var pages: [Page] = []
-        guard
-            let enumerator = FileManager.default.enumerator(
+        let mdFiles: [URL]
+        if flat {
+            // Shallow walk — flat means flat. Subdirectories under the
+            // content root in this mode are per-page asset folders, not
+            // additional content.
+            let entries = try FileManager.default.contentsOfDirectory(
+                at: contentRoot,
+                includingPropertiesForKeys: [.isRegularFileKey],
+                options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
+            )
+            mdFiles = entries.filter { $0.pathExtension.lowercased() == "md" }
+        } else {
+            guard let enumerator = FileManager.default.enumerator(
                 at: contentRoot,
                 includingPropertiesForKeys: [.isRegularFileKey],
                 options: [.skipsHiddenFiles]
-            )
-        else { return [] }
+            ) else { return [] }
+            var files: [URL] = []
+            for case let url as URL in enumerator
+                where url.pathExtension.lowercased() == "md"
+            {
+                files.append(url)
+            }
+            mdFiles = files
+        }
 
-        for case let url as URL in enumerator {
-            guard url.pathExtension.lowercased() == "md" else { continue }
+        var pages: [Page] = []
+        for url in mdFiles {
             do {
                 let page = try makePage(
                     fileURL: url,
                     contentRoot: contentRoot,
-                    config: config
+                    config: config,
+                    flat: flat
                 )
                 if !includeDrafts && page.frontmatter.draft { continue }
                 pages.append(page)
@@ -156,36 +264,84 @@ public final class SiteBuilder: Sendable {
     private func makePage(
         fileURL: URL,
         contentRoot: URL,
-        config: SiteConfig
+        config: SiteConfig,
+        flat: Bool
     ) throws -> Page {
         let raw = try String(contentsOf: fileURL, encoding: .utf8)
         let (frontmatter, body) = try frontmatterParser.parse(raw)
 
         let relative = relativePath(of: fileURL, against: contentRoot)
-        let kind = inferKind(relativePath: relative)
-        let bodyHTML = markdownRenderer.render(body)
+        let kind = inferKind(
+            relativePath: relative,
+            frontmatter: frontmatter,
+            flat: flat
+        )
+        let basename = fileURL.deletingPathExtension().lastPathComponent
+        let normalizedBody = flat
+            ? Self.rewriteSelfReferenceImages(body, basename: basename)
+            : body
+        let bodyHTML = markdownRenderer.render(normalizedBody)
 
         var page = Page(
             sourceURL: fileURL,
             relativePath: relative,
             kind: kind,
             frontmatter: frontmatter,
-            bodyMarkdown: body,
+            bodyMarkdown: normalizedBody,
             bodyHTML: bodyHTML
         )
         page.permalink = makePermalink(for: page, config: config)
         return page
     }
 
-    private func inferKind(relativePath: String) -> Page.Kind {
-        let parts = relativePath.split(separator: "/").map(String.init)
-        if parts.count == 1 && parts[0].lowercased() == "index.md" {
+    private func inferKind(
+        relativePath: String,
+        frontmatter: Frontmatter,
+        flat: Bool
+    ) -> Page.Kind {
+        if relativePath.lowercased() == "index.md" {
             return .index
         }
-        if parts.first?.lowercased() == "posts" {
+        if let explicit = Self.parseExplicitKind(frontmatter.kind) {
+            return explicit
+        }
+        if flat {
+            return .post
+        }
+        if relativePath.hasPrefix("posts/") {
             return .post
         }
         return .page
+    }
+
+    /// Parse the optional ``kind:`` frontmatter field. Only `"post"` and
+    /// `"page"` are valid; anything else (including `"index"`) is ignored
+    /// so callers fall back to mode-based defaults.
+    private static func parseExplicitKind(_ raw: String?) -> Page.Kind? {
+        switch raw?.lowercased() {
+        case "post": return .post
+        case "page": return .page
+        default: return nil
+        }
+    }
+
+    /// In flat mode, the body markdown often references the sibling asset
+    /// folder via ``![alt](./<basename>/file.png)`` — that's the Obsidian
+    /// "attachment folder" convention. After build the assets are
+    /// co-located with the rendered HTML under
+    /// ``_site/posts/<slug>/file.png``, so the ``./<basename>/`` prefix
+    /// becomes wrong. Rewrite to ``./file.png`` so the link resolves
+    /// directly in the published page.
+    static func rewriteSelfReferenceImages(_ body: String, basename: String) -> String {
+        let escapedBase = NSRegularExpression.escapedPattern(for: basename)
+        let pattern = "!\\[([^\\]]*)\\]\\(\\./\(escapedBase)/([^)]+)\\)"
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return body }
+        let range = NSRange(body.startIndex..<body.endIndex, in: body)
+        return regex.stringByReplacingMatches(
+            in: body,
+            range: range,
+            withTemplate: "![$1](./$2)"
+        )
     }
 
     private func makePermalink(for page: Page, config: SiteConfig) -> String {

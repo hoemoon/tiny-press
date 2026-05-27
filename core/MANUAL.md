@@ -219,6 +219,10 @@ http://127.0.0.1:8080/
 
 ## 폴더 컨벤션
 
+빌더가 두 가지 레이아웃을 자동 감지합니다.
+
+### Structured (전통 방식)
+
 ```
 my-site/
 ├── tinypress.yml                 # SiteConfig
@@ -231,6 +235,35 @@ my-site/
 └── static/                       # 출력 루트로 그대로 복사됨
     └── images/
 ```
+
+### Flat (Obsidian 호환 / naverp 아카이브 호환)
+
+```
+my-channel/                       # tinypress.yml 없어도 동작
+├── index.md                      # 옵션 — 홈페이지
+├── 260124144615127ua.md          # 루트의 모든 .md는 기본적으로 post
+├── 260124144615127ua/            # .md와 같은 이름의 형제 폴더 = 자산 사이드카
+│   ├── 01.png
+│   └── 02.jpg
+├── 260303233251216jo.md
+└── about.md                      # frontmatter에 `kind: page` 두면 page로 분류
+```
+
+자동 감지 규칙: `posts/` 또는 `pages/` 디렉터리가 콘텐츠 루트에 없으면
+**flat 모드**. 사이트 루트에 `content/` 서브폴더가 없으면 사이트 루트
+자체를 콘텐츠 루트로 간주.
+
+Flat 모드에서:
+
+- 모든 `.md` 가 post (frontmatter `kind: page` 로 옵아웃 가능)
+- `<basename>.md` 옆의 `<basename>/` 폴더 내용물은 글 출력 디렉터리로 복사
+- 본문의 `![](./<basename>/X)` 링크는 빌드 시 `![](./X)` 로 재작성되어
+  발행 URL에서 그대로 동작 (원본 markdown은 Obsidian에서도 그대로 열림)
+- 사이드카는 `permalinkStyle: pretty` 일 때만 동작. `file` 스타일은 경고
+  남기고 사이드카 복사 건너뜀
+
+이 레이아웃 덕분에 `tinypress build --source ~/Documents/Naverp/wave`
+같이 별도 변환 단계 없이 naverp 아카이브를 그대로 사이트로 빌드합니다.
 
 콘텐츠 작성 가이드(frontmatter 필드, 테마 오버라이드)는
 [`docs/CONTENT.md`](docs/CONTENT.md)와
