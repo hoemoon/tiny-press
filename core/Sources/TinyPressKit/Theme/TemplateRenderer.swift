@@ -113,6 +113,10 @@ public struct TemplateRenderer {
         if let description = site.config.description { siteDict["description"] = description }
         if let author = site.config.author { siteDict["author"] = author }
         if let baseURL = site.config.baseURL { siteDict["baseURL"] = baseURL.absoluteString }
+        siteDict["search"] = [
+            "engine": site.config.search.engine.rawValue,
+            "enabled": site.config.search.engine != .none,
+        ]
         return ["site": siteDict]
     }
 
@@ -143,14 +147,99 @@ public struct TemplateRenderer {
         return dict
     }
 
-    private func makeExcerpt(from markdown: String, limit: Int = 160) -> String {
-        let stripped = markdown
-            .components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .first(where: { !$0.isEmpty && !$0.hasPrefix("#") }) ?? ""
-        if stripped.count <= limit { return stripped }
-        let endIndex = stripped.index(stripped.startIndex, offsetBy: limit)
-        return String(stripped[..<endIndex]).trimmingCharacters(in: .whitespaces) + "…"
+    /// Returns a short plain-text excerpt suitable for a post-list card.
+    ///
+    /// Walks the body line by line, skipping markdown that doesn't read as
+    /// prose (headings, images, horizontal rules, attribute-only emphasis,
+    /// link-only lines), then joins the next 1–2 real prose lines and
+    /// strips inline markdown so the surface text doesn't leak `**`, `[`,
+    /// or stray image tags into the rendered card.
+    private func makeExcerpt(from markdown: String, limit: Int = 220) -> String {
+        let lines = markdown.components(separatedBy: .newlines)
+        var collected: [String] = []
+        for raw in lines {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            if isExcerptSkippable(line) { continue }
+            let clean = stripInlineMarkdown(line)
+            if clean.isEmpty { continue }
+            collected.append(clean)
+            // Two prose lines is enough for a card preview — anything more
+            // bloats the index page and competes with the title for
+            // attention.
+            if collected.count >= 2 { break }
+        }
+        let joined = collected.joined(separator: " ")
+        if joined.count <= limit { return joined }
+        let endIndex = joined.index(joined.startIndex, offsetBy: limit)
+        return String(joined[..<endIndex]).trimmingCharacters(in: .whitespaces) + "…"
+    }
+
+    /// True when a trimmed body line is markdown structure rather than
+    /// readable prose. Headings, blank lines, dividers, lone images, list
+    /// markers with no body text, and pure-emphasis "decorative" lines
+    /// all qualify.
+    private func isExcerptSkippable(_ line: String) -> Bool {
+        if line.isEmpty { return true }
+        if line.hasPrefix("#") { return true }
+        if line.hasPrefix("---") || line.hasPrefix("***") { return true }
+        if line.hasPrefix(">") { return true }
+        if line.hasPrefix("```") { return true }
+        // Image-only line: `![alt](src)` possibly wrapped in trailing
+        // whitespace / stray closing parens (naverp output occasionally
+        // produces these).
+        if line.hasPrefix("!") { return true }
+        // Lines that are purely asterisks / underscores used as visual
+        // spacers in Naver Premium articles (`****`, `___`).
+        let strippedOfMarkers =
+            line.replacingOccurrences(of: "*", with: "")
+                .replacingOccurrences(of: "_", with: "")
+                .trimmingCharacters(in: .whitespaces)
+        if strippedOfMarkers.isEmpty { return true }
+        // Pure HTML comment lines.
+        if line.hasPrefix("<!--") { return true }
+        // Index / "related posts" lines: prose almost never carries two
+        // or more `[text](url)` markdown links on the same line, but
+        // index/TOC/관련글 lists do. Treat those as navigation rather
+        // than excerpt material.
+        if Self.countMarkdownLinks(in: line) >= 2 { return true }
+        return false
+    }
+
+    private static func countMarkdownLinks(in line: String) -> Int {
+        guard let regex = try? NSRegularExpression(pattern: #"\[[^\]]+\]\([^)]*\)"#)
+        else { return 0 }
+        let range = NSRange(line.startIndex..<line.endIndex, in: line)
+        return regex.numberOfMatches(in: line, range: range)
+    }
+
+    /// Removes a small set of inline markdown markers — emphasis,
+    /// link syntax around the visible label, residual image markdown if
+    /// it survived the line filter, and inline code backticks — so the
+    /// excerpt reads as prose. Not a full markdown stripper; just enough
+    /// to keep `**`, `[`, and `` ` `` out of the surface text.
+    private func stripInlineMarkdown(_ line: String) -> String {
+        var s = line
+        // Drop inline images entirely (`![alt](url)`).
+        if let regex = try? NSRegularExpression(pattern: #"!\[[^\]]*\]\([^)]*\)"#) {
+            let range = NSRange(s.startIndex..<s.endIndex, in: s)
+            s = regex.stringByReplacingMatches(in: s, range: range, withTemplate: "")
+        }
+        // Replace `[text](url)` with just `text`.
+        if let regex = try? NSRegularExpression(pattern: #"\[([^\]]+)\]\([^)]*\)"#) {
+            let range = NSRange(s.startIndex..<s.endIndex, in: s)
+            s = regex.stringByReplacingMatches(in: s, range: range, withTemplate: "$1")
+        }
+        // Remove emphasis markers but keep the inner text.
+        s = s
+            .replacingOccurrences(of: "**", with: "")
+            .replacingOccurrences(of: "__", with: "")
+            .replacingOccurrences(of: "`", with: "")
+        // Leading list markers (`- `, `* `, `1. `).
+        if let regex = try? NSRegularExpression(pattern: #"^\s*(?:[-*+]|\d+\.)\s+"#) {
+            let range = NSRange(s.startIndex..<s.endIndex, in: s)
+            s = regex.stringByReplacingMatches(in: s, range: range, withTemplate: "")
+        }
+        return s.trimmingCharacters(in: .whitespaces)
     }
 
     private func asAny(_ value: FrontmatterValue) -> Any {

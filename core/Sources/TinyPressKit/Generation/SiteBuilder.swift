@@ -109,12 +109,53 @@ public final class SiteBuilder: Sendable {
             }
         }
 
+        let searchOutcome = await runSearchIndexer(
+            site: site,
+            warnings: &warnings
+        )
+
         return BuildReport(
             pagesGenerated: generated,
             assetsCopied: themeAssetCount + userAssetCount + sidecarAssetCount,
             duration: Date().timeIntervalSince(start),
-            warnings: warnings
+            warnings: warnings,
+            searchIndex: searchOutcome
         )
+    }
+
+    /// Runs the configured search indexer over the freshly-built site.
+    /// Failures are degraded to warnings — search wiring should never
+    /// gate the rest of the build.
+    private func runSearchIndexer(
+        site: Site,
+        warnings: inout [String]
+    ) async -> BuildReport.SearchIndexStatus {
+        switch site.config.search.engine {
+        case .none:
+            return .disabled
+        case .pagefind:
+            let runner = PagefindRunner()
+            switch await runner.run(
+                outputRoot: site.outputRoot,
+                language: site.config.language
+            ) {
+            case .indexed:
+                return .indexed(engine: "pagefind")
+            case .binaryMissing:
+                warnings.append(
+                    "search.engine: pagefind — `pagefind` not found on PATH or via npx. "
+                    + "Install it with `npm i -g pagefind`, `cargo install pagefind`, or set "
+                    + "TINYPRESS_PAGEFIND to a binary path."
+                )
+                return .skipped(reason: "binary missing")
+            case .failed(let status, let stderr):
+                warnings.append(
+                    "search.engine: pagefind exited with status \(status). "
+                    + (stderr.isEmpty ? "" : "Output: \(stderr)")
+                )
+                return .skipped(reason: "exit \(status)")
+            }
+        }
     }
 
     private func copyAssetSidecar(
@@ -442,12 +483,28 @@ public struct BuildReport: Sendable, Equatable {
     public let duration: TimeInterval
     /// Non-fatal issues encountered (e.g. malformed pages, missing config).
     public let warnings: [String]
+    /// Outcome of the search-indexing step (disabled when
+    /// `search.engine == none`).
+    public let searchIndex: SearchIndexStatus
 
-    public init(pagesGenerated: Int, assetsCopied: Int, duration: TimeInterval, warnings: [String]) {
+    public enum SearchIndexStatus: Sendable, Equatable {
+        case disabled
+        case indexed(engine: String)
+        case skipped(reason: String)
+    }
+
+    public init(
+        pagesGenerated: Int,
+        assetsCopied: Int,
+        duration: TimeInterval,
+        warnings: [String],
+        searchIndex: SearchIndexStatus = .disabled
+    ) {
         self.pagesGenerated = pagesGenerated
         self.assetsCopied = assetsCopied
         self.duration = duration
         self.warnings = warnings
+        self.searchIndex = searchIndex
     }
 }
 

@@ -154,6 +154,12 @@ Built 4 page(s) and copied 3 asset(s) in 0.123s
 /Users/me/demo/_site
 ```
 
+`tinypress.yml`에 `search.engine: pagefind` 가 설정되어 있으면 빌드
+끝에 [Pagefind](https://pagefind.app) 바이너리를 호출해
+`<output>/pagefind/` 인덱스를 만들고 기본 테마가 검색 UI를 자동
+주입합니다. 자세한 사항은 [`docs/CONTENT.md`](docs/CONTENT.md#search)
+참조.
+
 ### `tinypress preview`
 
 사이트를 빌드한 뒤 소스 트리를 감시하면서, 라이브 리로드 기능을 가진

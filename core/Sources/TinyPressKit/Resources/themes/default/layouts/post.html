@@ -10,6 +10,9 @@
       {% for tag in page.tags %}<li>{{ tag }}</li>{% endfor %}
     </ul>
     {% endif %}
+    {% if page.extra.url %}
+    <p class="post-source"><a href="{{ page.extra.url }}" rel="noopener" target="_blank">원본 보기 ↗</a></p>
+    {% endif %}
   </header>
   <div class="post-body">
     {{ content }}

@@ -9,12 +9,46 @@
   <meta property="og:title" content="{% block ogTitle %}{{ page.title }}{% endblock %}" />
   {% if site.description %}<meta property="og:description" content="{{ site.description }}" />{% endif %}
   <meta property="og:type" content="website" />
+  {% if site.search.enabled %}
+  <link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
+  <script src="/pagefind/pagefind-ui.js" defer></script>
+  {% endif %}
   <link rel="stylesheet" href="/assets/style.css" />
 </head>
 <body>
   <header class="site-header">
     <a class="site-title" href="/">{{ site.title }}</a>
     {% if site.description %}<p class="site-description">{{ site.description }}</p>{% endif %}
+    {% if site.search.enabled and page.kind == "index" %}
+    <div id="search" class="site-search"></div>
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+        if (typeof PagefindUI === 'undefined') return;
+        const lang = document.documentElement.lang || 'en';
+        const koTranslations = {
+          placeholder: '검색어를 입력하세요',
+          clear_search: '지우기',
+          load_more: '더 보기',
+          search_label: '사이트 검색',
+          filters_label: '필터',
+          zero_results: '"[SEARCH_TERM]" 에 대한 결과가 없습니다',
+          many_results: '"[SEARCH_TERM]" 에 대한 결과 [COUNT]건',
+          one_result: '"[SEARCH_TERM]" 에 대한 결과 1건',
+          alt_search: '"[SEARCH_TERM]" 에 결과가 없습니다. 대신 "[DIFFERENT_TERM]" 결과를 보여드립니다',
+          search_suggestion: '"[SEARCH_TERM]" 에 결과가 없습니다. 다른 검색어를 시도해보세요',
+          searching: '"[SEARCH_TERM]" 검색 중…',
+        };
+        new PagefindUI({
+          element: '#search',
+          showSubResults: true,
+          showImages: false,
+          resetStyles: false,
+          pageSize: 20,
+          translations: lang.startsWith('ko') ? koTranslations : undefined,
+        });
+      });
+    </script>
+    {% endif %}
   </header>
   <main class="site-main">
     {% block content %}{% endblock %}

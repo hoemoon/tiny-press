@@ -78,6 +78,23 @@ struct MarkdownRendererTests {
         #expect(html.contains("<del>gone</del>"))
     }
 
+    @Test func singleTildesAreLiteralNotStrikethrough() {
+        // Korean range expressions like "수십~수백" or "3,000~4,000" must
+        // not collapse into a single <del>. Only double tildes start
+        // strikethrough.
+        let html = renderer.render("3,000~4,000 달러, 수십~수백 MW")
+        #expect(!html.contains("<del>"))
+        #expect(html.contains("3,000~4,000"))
+        #expect(html.contains("수십~수백"))
+    }
+
+    @Test func mixedSingleAndDoubleTildesPreservedCorrectly() {
+        let html = renderer.render("a~b ~~c~~ d~e")
+        #expect(html.contains("a~b"))
+        #expect(html.contains("<del>c</del>"))
+        #expect(html.contains("d~e"))
+    }
+
     @Test func rendersInlineCodeAndLink() {
         let html = renderer.render("Use `swift build` then [docs](https://example.com).")
         #expect(html.contains("<code>swift build</code>"))

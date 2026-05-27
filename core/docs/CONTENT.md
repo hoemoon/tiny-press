@@ -83,15 +83,28 @@ Body markdown goes here.
 | Field | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `title` | string | derived from slug | Used in `<title>` and post lists. |
-| `date` | ISO date | — | Sorts posts on the index. |
+| `date` | ISO date | — | Sorts posts on the index. Falls back to `extra.published_at`, `extra.pub_date`, or `extra.created` when omitted. |
 | `tags` | string list | `[]` | Rendered as a tag pill row in the default theme. |
 | `slug` | string | filename | Overrides the URL slug. |
 | `draft` | bool | `false` | Excluded from build unless `--include-drafts`. |
 | `layout` | string | inferred from kind | Layout file name (without `.html`). |
 | `kind` | `post` \| `page` | inferred from layout (see [File layout](#file-layout)) | Explicit override of the page kind. In structured mode the directory normally decides; in flat mode every page defaults to `post`. |
-| `extra` | map | `{}` | Free-form values — strings, ints, doubles, bools, arrays, dicts. |
+| `extra` | map | `{}` | Free-form values — strings, ints, doubles, bools, arrays, dicts. Unknown top-level keys (e.g. `published_at:`, `naver_id:`) are folded in automatically. |
 
-`extra.*` is exposed to templates as `page.extra.<key>`.
+`extra.*` is exposed to templates as `page.extra.<key>`. Both an
+explicit `extra:` block and any unknown top-level keys end up there,
+so foreign frontmatter conventions (Hugo's `publishDate`, naverp's
+`published_at`) survive without losing the closed-shape semantics of
+the known fields.
+
+### Conventions the default theme reads from `extra`
+
+- **`extra.url`** — Canonical source URL for the article. The default
+  theme renders it as a small "원본 보기 ↗" link under the post
+  header. Useful for archives (naverp, link-roll sites) where each
+  post mirrors a remote article and you want a discreet pointer back
+  to the original. Set the top-level YAML key `url:` in your
+  frontmatter and the theme picks it up automatically.
 
 ## Slugs
 
@@ -129,3 +142,56 @@ through unchanged.
 Place static assets under `static/` and reference them with absolute
 paths (`/images/foo.png`). The `static/` convention works in both
 layouts.
+
+## Search
+
+`tinypress` ships with optional [Pagefind](https://pagefind.app)
+integration. Enable it from `tinypress.yml`:
+
+```yaml
+# Shorthand (recommended):
+search: pagefind
+
+# Or the full object form:
+search:
+  engine: pagefind
+```
+
+What happens at build time:
+
+1. `tinypress build` renders the site as usual into `<output>/`.
+2. If `search.engine` is `pagefind`, the builder shells out to the
+   `pagefind` binary (or `npx pagefind` as a fallback) with
+   `--root-selector main`, so only the body of each page is indexed —
+   not the site header or footer chrome.
+3. Pagefind writes a `<output>/pagefind/` directory containing a
+   chunked index plus the prebuilt web-component UI.
+4. The default theme injects the Pagefind UI on the index page
+   automatically when `search.enabled` is true.
+
+CJK content (Chinese / Japanese / Korean) is segmented with
+`Intl.Segmenter` both at index time (inside Pagefind) and at query
+time (inside the UI). Set `language: ko` in `tinypress.yml` so
+Pagefind's UI loads its Korean strings.
+
+### Install Pagefind
+
+`tinypress` does not bundle Pagefind. Pick one:
+
+```bash
+# npm (recommended — Pagefind ships an extended Korean-friendly build)
+npm install -g pagefind
+
+# cargo
+cargo install pagefind --features extended
+
+# Or run via npx without installing
+npx pagefind --version
+```
+
+Set `TINYPRESS_PAGEFIND=/absolute/path/to/pagefind` to override binary
+discovery (useful for pinned versions or non-standard install
+locations).
+
+If Pagefind is not found, the build still succeeds — only the search
+step is skipped, with a warning in the build report.

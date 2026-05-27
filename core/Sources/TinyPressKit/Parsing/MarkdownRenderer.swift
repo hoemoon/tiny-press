@@ -12,9 +12,28 @@ public struct MarkdownRenderer: Sendable {
     /// rewritten later by the build pipeline so the renderer stays
     /// orthogonal to URL routing concerns.
     public func render(_ markdown: String) -> String {
-        let document = Document(parsing: markdown, options: [.parseBlockDirectives])
+        let prepared = Self.escapeSingleTildes(markdown)
+        let document = Document(parsing: prepared, options: [.parseBlockDirectives])
         var walker = HTMLEmittingWalker()
         walker.visit(document)
         return walker.html
+    }
+
+    /// `swift-markdown` always registers cmark-gfm's strikethrough
+    /// extension, which is more permissive than the GFM spec: a single
+    /// pair of `~` (e.g. `수십~수백`, `3,000~4,000`) is treated as
+    /// strikethrough even though only `~~text~~` is meant to. Korean
+    /// prose uses lone tildes for numeric / lexical ranges constantly,
+    /// so we escape any single tilde to `\~` before parsing. Double
+    /// tildes are left alone so intentional strikethrough still works.
+    static func escapeSingleTildes(_ markdown: String) -> String {
+        guard let regex = try? NSRegularExpression(pattern: #"(?<!~)~(?!~)"#)
+        else { return markdown }
+        let range = NSRange(markdown.startIndex..<markdown.endIndex, in: markdown)
+        return regex.stringByReplacingMatches(
+            in: markdown,
+            range: range,
+            withTemplate: #"\\~"#
+        )
     }
 }

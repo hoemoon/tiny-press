@@ -64,6 +64,57 @@ struct FrontmatterParserTests {
         #expect(body == "body line")
     }
 
+    @Test func fallsBackToPublishedAtWhenDateMissing() throws {
+        let input = """
+            ---
+            title: Naverp Article
+            published_at: "2026-03-03"
+            fetched_at: 2026-05-27T06:00:17Z
+            channel: growthpapa/wave
+            ---
+            body
+            """
+        let (fm, _) = try parser.parse(input)
+        #expect(fm.date != nil)
+        let components = Calendar(identifier: .gregorian)
+            .dateComponents(in: TimeZone(secondsFromGMT: 0)!, from: fm.date!)
+        #expect(components.year == 2026)
+        #expect(components.month == 3)
+        #expect(components.day == 3)
+        #expect(fm.extra["channel"] == .string("growthpapa/wave"))
+        #expect(fm.extra["published_at"] == .string("2026-03-03"))
+    }
+
+    @Test func explicitDateBeatsPublishedAt() throws {
+        let input = """
+            ---
+            date: 2026-01-01
+            published_at: "2026-12-31"
+            ---
+            body
+            """
+        let (fm, _) = try parser.parse(input)
+        let components = Calendar(identifier: .gregorian)
+            .dateComponents(in: TimeZone(secondsFromGMT: 0)!, from: fm.date!)
+        #expect(components.year == 2026)
+        #expect(components.month == 1)
+        #expect(components.day == 1)
+    }
+
+    @Test func capturesUnknownTopLevelKeysIntoExtra() throws {
+        let input = """
+            ---
+            title: T
+            naver_id: 260303233251216jo
+            image_count: 3
+            ---
+            body
+            """
+        let (fm, _) = try parser.parse(input)
+        #expect(fm.extra["naver_id"] == .string("260303233251216jo"))
+        #expect(fm.extra["image_count"] == .int(3))
+    }
+
     @Test func bodyContainingTripleDashIsNotTreatedAsDelimiter() throws {
         let input = """
             ---

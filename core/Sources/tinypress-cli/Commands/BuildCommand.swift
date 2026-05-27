@@ -37,6 +37,14 @@ struct BuildCommand: AsyncParsableCommand {
                 "Built \(report.pagesGenerated) page(s) and copied "
                     + "\(report.assetsCopied) asset(s) in \(timing)"
             )
+            switch report.searchIndex {
+            case .disabled:
+                break
+            case .indexed(let engine):
+                Log.info("Search index built via \(engine).")
+            case .skipped(let reason):
+                Log.info("Search index skipped: \(reason)")
+            }
             for warning in report.warnings {
                 Log.info("warning: \(warning)")
             }

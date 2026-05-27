@@ -56,8 +56,52 @@ public struct Frontmatter: Codable, Sendable, Equatable {
     /// All-defaults frontmatter, used when a file has no metadata block.
     public static let empty = Frontmatter()
 
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case title, date, tags, slug, draft, layout, kind, extra
+    }
+
+    /// Unknown top-level frontmatter keys are sniffed via a dynamic
+    /// `CodingKey`, then folded into ``extra``. Lets foreign conventions
+    /// such as naverp's `published_at:` survive without losing the
+    /// closed-shape semantics of the known fields.
+    private struct DynamicKey: CodingKey {
+        var stringValue: String
+        var intValue: Int? { nil }
+        init?(stringValue: String) { self.stringValue = stringValue }
+        init?(intValue: Int) { return nil }
+    }
+
+    /// Date fallback search order: `published_at`, `pub_date`, `created`.
+    /// Accepts ISO-8601, ISO-8601 with fractional seconds, or `YYYY-MM-DD`.
+    private static func fallbackDate(from extras: [String: FrontmatterValue]) -> Date? {
+        let candidates = ["published_at", "pub_date", "created"]
+        for key in candidates {
+            guard let value = extras[key] else { continue }
+            switch value {
+            case .string(let raw):
+                if let parsed = parseLooseDate(raw) { return parsed }
+            default:
+                continue
+            }
+        }
+        return nil
+    }
+
+    private static func parseLooseDate(_ raw: String) -> Date? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime]
+        if let date = iso.date(from: trimmed) { return date }
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = iso.date(from: trimmed) { return date }
+        iso.formatOptions = [.withFullDate]
+        if let date = iso.date(from: trimmed) { return date }
+        let dayFormatter = DateFormatter()
+        dayFormatter.calendar = Calendar(identifier: .gregorian)
+        dayFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dayFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+        dayFormatter.dateFormat = "yyyy-MM-dd"
+        return dayFormatter.date(from: trimmed)
     }
 
     public init(from decoder: Decoder) throws {
@@ -69,8 +113,23 @@ public struct Frontmatter: Codable, Sendable, Equatable {
         self.draft = try container.decodeIfPresent(Bool.self, forKey: .draft) ?? false
         self.layout = try container.decodeIfPresent(String.self, forKey: .layout)
         self.kind = try container.decodeIfPresent(String.self, forKey: .kind)
-        self.extra =
+        // Merge the explicit `extra:` block (if any) with any unknown
+        // top-level keys, so foreign frontmatter conventions like
+        // `published_at:` are preserved alongside known fields.
+        var merged =
             try container.decodeIfPresent([String: FrontmatterValue].self, forKey: .extra) ?? [:]
+        let dynamic = try decoder.container(keyedBy: DynamicKey.self)
+        let knownNames = Set(CodingKeys.allCases.map { $0.stringValue })
+        for key in dynamic.allKeys where !knownNames.contains(key.stringValue) {
+            if merged[key.stringValue] != nil { continue }
+            if let value = try dynamic.decodeIfPresent(FrontmatterValue.self, forKey: key) {
+                merged[key.stringValue] = value
+            }
+        }
+        self.extra = merged
+        if self.date == nil {
+            self.date = Self.fallbackDate(from: merged)
+        }
     }
 
     public func encode(to encoder: Encoder) throws {
