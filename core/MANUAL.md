@@ -2,8 +2,7 @@
 
 `tinypress`는 tiny press의 커맨드라인 진입점입니다.
 
-> 상태: `init`, `build`, `preview`는 현재 사용 가능. `serve`(이미 빌드된
-> 트리를 watch 없이 서빙)는 추가 예정.
+> 상태: `init`, `build`, `preview`, `serve` 모두 사용 가능.
 
 ## 설치
 
@@ -53,6 +52,7 @@ SUBCOMMANDS:
   init                    지정한 경로에 새 tiny press 사이트를 스캐폴드합니다.
   build                   --source의 사이트를 --output 폴더로 렌더링합니다.
   preview                 사이트를 빌드하고 변경을 감지하면서 로컬에서 라이브 리로드와 함께 서빙합니다.
+  serve                   이미 빌드된 사이트를 로컬에서 정적으로 서빙합니다 (watcher 없음).
 
   See 'tinypress help <subcommand>' for detailed help.
 ```
@@ -218,6 +218,45 @@ Preview server listening at http://127.0.0.1:8080/
 Tailscale share: https://laptop.tail-scale.ts.net/
 Watching for changes — Ctrl-C to stop.
 http://127.0.0.1:8080/
+```
+
+### `tinypress serve`
+
+이미 빌드된 `_site` 트리를 watcher 없이 정적으로 서빙합니다.
+`preview`의 "헤드리스" 짝 — 빌드를 외부에서 주도(`naverp sync`가
+끝나면서 `tinypress build` 호출, cron, CI 등)할 때의 launchd 데몬
+용으로 적합합니다. FSEvents → debounce → rebuild 사이클이 없어,
+macOS 배경 프로세스(Spotlight, Time Machine 등)가 소스 트리를
+건드려도 무한 rebuild 루프에 빠지지 않습니다.
+
+<!-- BEGIN_HELP:serve -->
+```
+OVERVIEW: 이미 빌드된 사이트를 로컬에서 정적으로 서빙합니다 (watcher 없음).
+
+USAGE: tinypress serve --root <root> [--port <port>] [--host <host>]
+
+OPTIONS:
+  -r, --root <root>       서빙할 _site 폴더. (이미 빌드되어 있어야 합니다)
+  -p, --port <port>       선호 로컬 포트 (사용 중이면 자동으로 다음 빈 포트). (default: 8080)
+  --host <host>           바인드 호스트. (default: 127.0.0.1)
+  --version               Show the version.
+  -h, --help              Show help information.
+```
+<!-- END_HELP:serve -->
+
+| 옵션 | 기본값 | 설명 |
+|---|---|---|
+| `-r`, `--root <path>` | *(필수)* | 서빙할 빌드 결과(_site) 폴더. |
+| `-p`, `--port <n>` | `8080` | 처음 시도하는 포트. 사용 중이면 자동으로 다음 빈 포트. |
+| `--host <host>` | `127.0.0.1` | 바인드 인터페이스. |
+
+**예시**
+
+```bash
+$ tinypress serve --root ~/Library/Caches/tinypress-wave/_site --port 8101
+Static server listening at http://127.0.0.1:8101/
+Serving /Users/me/Library/Caches/tinypress-wave/_site — Ctrl-C to stop.
+http://127.0.0.1:8101/
 ```
 
 ## 폴더 컨벤션

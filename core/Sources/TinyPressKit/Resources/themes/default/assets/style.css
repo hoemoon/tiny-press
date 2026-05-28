@@ -238,6 +238,54 @@ hr {
   margin: 2.4rem 0;
 }
 
+/* Tables — GFM-style. Long rows scroll horizontally inside the
+   reading column so very wide tables don't blow up the page.
+   The row divider uses a noticeably darker tone than `hairline`
+   (which is too close to the cream canvas to read as a line),
+   plus zebra striping on tbody rows so dense tables stay scannable
+   even when the divider crosses a long korean text cell. */
+:root { --table-rule: #cabd9f; }
+@media (prefers-color-scheme: dark) {
+  :root { --table-rule: #4a463f; }
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.92em;
+  line-height: 1.5;
+  background: var(--canvas);
+  display: block;
+  overflow-x: auto;
+  border: 1px solid var(--table-rule);
+  border-radius: var(--r-md);
+}
+table thead {
+  background: var(--surface-card);
+}
+table th,
+table td {
+  border-bottom: 1px solid var(--table-rule);
+  padding: 0.55rem 0.85rem;
+  text-align: left;
+  vertical-align: top;
+}
+table th {
+  font-weight: 600;
+  color: var(--ink);
+  border-bottom: 1px solid var(--table-rule);
+  white-space: nowrap;
+}
+table tbody tr:nth-child(even) {
+  background: var(--surface-soft);
+}
+table tr:last-child td {
+  border-bottom: none;
+}
+table tbody tr:hover {
+  background: var(--surface-card);
+}
+
 ul,
 ol {
   padding-left: 1.4rem;

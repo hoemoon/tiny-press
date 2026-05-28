@@ -34,6 +34,7 @@ COMMANDS: dict[str, list[str]] = {
     "build": ["build"],
     "init": ["init"],
     "preview": ["preview"],
+    "serve": ["serve"],
 }
 
 CORE = Path(__file__).resolve().parent.parent
